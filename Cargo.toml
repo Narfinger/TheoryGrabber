@@ -4,3 +4,7 @@ version = "0.1.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 
 [dependencies]
+cursive = "0.7"            # A TUI (Text User Interface) library focused on ease-of-use.
+cursive_table_view = "0.4" # A basic table view implementation for cursive.
+rss = {version = "1.1", features = ["from_url"]}                # Library for serializing the RSS web content syndication format
+url = "1.5"                  # URL library for Rust, based on the WHATWG URL Standard
