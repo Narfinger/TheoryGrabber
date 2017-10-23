@@ -25,9 +25,9 @@ fn main() {
             let link = i.link().unwrap();
 
             Paper {
-                title: title,
-                description: description,
-                link: Url::parse(link),
+                title: title.to_string(),
+                description: description.to_string(),
+                link: Url::parse(link).unwrap(),
             }
         });
 
