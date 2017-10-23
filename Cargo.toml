@@ -1,0 +1,6 @@
+[package]
+name = "TheoryGrabber"
+version = "0.1.0"
+authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
+
+[dependencies]
