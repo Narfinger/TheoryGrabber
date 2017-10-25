@@ -9,7 +9,7 @@ use cursive::Cursive;
 use cursive::traits::*;
 use cursive::align::HAlign::Center;
 use cursive::align::HAlign;
-use cursive::views::{Dialog, TextView};
+use cursive::views::{LinearLayout, ListView, Dialog, TextView};
 use cursive_table_view::{TableView, TableViewItem};
 use rss::Channel;
 use url::Url;
@@ -43,41 +43,10 @@ struct Paper {
     source: Source, 
 }
 
-impl TableViewItem<BasicColumn> for Paper {
-    fn to_column(&self, column: BasicColumn) -> String {
-        match column {
-            BasicColumn::Title => self.title.to_owned(),
-            BasicColumn::Source => format!("{}", self.source),
-        }
+impl fmt::Display for Paper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.title, self.source)
     }
-
-    fn cmp(&self, other: &Self, column: BasicColumn) -> std::cmp::Ordering where Self: Sized {
-        match column {
-            BasicColumn::Title => self.title.cmp(&other.title),
-            BasicColumn::Source => self.source.cmp(&other.source),
-        }
-    }
-}
-
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-enum BasicColumn {
-    Title,
-    Source,
-}
-
-impl BasicColumn {
-    fn as_str(&self) -> &str {
-        match *self {
-            BasicColumn::Title => "Title",
-            BasicColumn::Source => "Source",
-        }
-    }
-
-}
-
-fn buildui() {
-    
 }
 
 fn main() {
@@ -101,16 +70,13 @@ fn main() {
 
 
     let mut siv = Cursive::new();
-    let mut table = TableView::<Paper, BasicColumn>::new()
-        .column(BasicColumn::Title, "Title", |c| c.ordering(std::cmp::Ordering::Greater))
-        .column(BasicColumn::Source, "Source",|c| c.ordering(std::cmp::Ordering::Greater));
+    let mut l = ListView::new();
+    for i in papers {
+        let mut tv = TextView::new(format!("{}", i));
+        l.add_child(i.title.as_str(), tv);
+    }
     
-    table.set_items(papers);
-
-    
-    siv.add_layer(
-        table
-    );
+    siv.add_layer(Dialog::around(l));
 
     siv.run();
 }
