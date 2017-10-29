@@ -1,16 +1,18 @@
 extern crate cursive;
 extern crate cursive_table_view;
+extern crate indicatif;
 extern crate rss;
 extern crate url;
 
 
 use std::fmt;
 use cursive::Cursive;
-use cursive::traits::*;
 use cursive::align::HAlign::Center;
 use cursive::align::HAlign;
 use cursive::views::{Dialog, LinearLayout, TextView};
 use cursive_table_view::{TableView, TableViewItem};
+use cursive::traits::*;
+use indicatif::ProgressBar;
 use rss::Channel;
 use url::Url;
 
@@ -33,6 +35,23 @@ impl fmt::Display for Source {
 
         write!(f, "{}", out)
     }
+}
+
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+enum BasicColumn {
+    Title,
+    Source,
+}
+
+impl BasicColumn {
+    fn as_str(&self) -> &str {
+        match *self {
+            BasicColumn::Title => "Title",
+            BasicColumn::Source => "Source",
+        }
+    }
+
 }
 
 #[derive(Clone, Debug)]
@@ -59,28 +78,14 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-enum BasicColumn {
-    Title,
-    Source,
-}
-
-impl BasicColumn {
-    fn as_str(&self) -> &str {
-        match *self {
-            BasicColumn::Title => "Title",
-            BasicColumn::Source => "Source",
-        }
-    }
-
-}
-
 fn buildui() {
     
 }
 
 fn main() {
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(100);
+    
     let channel = Channel::from_url(ARXIV).unwrap();
 
     let papers = channel
@@ -107,10 +112,17 @@ fn main() {
     
     table.set_items(papers);
 
-    let mut l = LinearLayout::horizontal()
-        .add_child(table);
-    
-    siv.add_layer(Dialog::around(l).title("Test"));
+    // let mut l = LinearLayout::horizontal()
+    //     .add_child(table);
 
+
+    siv.add_layer(
+        Dialog::around(table.with_id("table").min_size((50, 20)))
+            .title("Table View")
+            .button("Quit", |s| s.quit())
+    );
+
+    pb.finish_and_clear();
+    
     siv.run();
 }
