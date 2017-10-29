@@ -1,3 +1,4 @@
+extern crate chrono;
 extern crate cursive;
 extern crate cursive_table_view;
 extern crate indicatif;
@@ -6,6 +7,7 @@ extern crate url;
 
 
 use std::fmt;
+use chrono::{DateTime, Utc};
 use cursive::Cursive;
 use cursive::align::HAlign::Center;
 use cursive::align::HAlign;
@@ -42,6 +44,7 @@ impl fmt::Display for Source {
 enum BasicColumn {
     Title,
     Source,
+    Published,
 }
 
 impl BasicColumn {
@@ -49,6 +52,7 @@ impl BasicColumn {
         match *self {
             BasicColumn::Title => "Title",
             BasicColumn::Source => "Source",
+            BasicColumn::Published => "Published",
         }
     }
 
@@ -60,6 +64,7 @@ struct Paper {
     description: String,
     link: url::Url,
     source: Source, 
+    published: i64, //in unix epoch
 }
 
 impl TableViewItem<BasicColumn> for Paper {
@@ -67,13 +72,15 @@ impl TableViewItem<BasicColumn> for Paper {
         match column {
             BasicColumn::Title => self.title.to_owned(),
             BasicColumn::Source => format!("{}", self.source),
+            BasicColumn::Published => format!("{}", self.published),
         }
     }
 
     fn cmp(&self, other: &Self, column: BasicColumn) -> std::cmp::Ordering where Self: Sized {
         match column {
-            BasicColumn::Title => self.title.cmp(&other.title),
-            BasicColumn::Source => self.source.cmp(&other.source),
+            BasicColumn::Title     => self.title.cmp(&other.title),
+            BasicColumn::Source    => self.source.cmp(&other.source),
+            BasicColumn::Published => self.published.cmp(&other.published),
         }
     }
 }
@@ -95,12 +102,14 @@ fn main() {
             let title = i.title().unwrap();
             let description = i.description().unwrap();
             let link = i.link().unwrap();
+            let published = i.pub_date().unwrap_or("").parse::<DateTime<chrono::FixedOffset>>().unwrap();
 
             Paper {
                 title: title.to_string(),
                 description: description.to_string(),
                 link: Url::parse(link).unwrap(),
                 source: Source::Arxiv,
+                published: published.timestamp(),
             }
         }).collect::<Vec<Paper>>();
 
@@ -108,7 +117,8 @@ fn main() {
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
         .column(BasicColumn::Title, "Title", |c| c.ordering(std::cmp::Ordering::Greater))
-        .column(BasicColumn::Source, "Source",|c| c.ordering(std::cmp::Ordering::Greater));
+        .column(BasicColumn::Source, "Source",|c| c.ordering(std::cmp::Ordering::Greater))
+        .column(BasicColumn::Published, "Published", |c| c.ordering(std::cmp::Ordering::Greater));
     
     table.set_items(papers);
 
