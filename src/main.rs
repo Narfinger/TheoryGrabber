@@ -90,8 +90,8 @@ fn buildui() {
 }
 
 fn main() {
-    let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(100);
+    //let pb = ProgressBar::new_spinner();
+    //pb.enable_steady_tick(100);
     
     let channel = Channel::from_url(ARXIV).unwrap();
 
@@ -102,7 +102,8 @@ fn main() {
             let title = i.title().unwrap();
             let description = i.description().unwrap();
             let link = i.link().unwrap();
-            let published = i.pub_date().unwrap_or("").parse::<DateTime<chrono::FixedOffset>>().unwrap();
+            println!("{}", i.pub_date().unwrap());
+            let published = DateTime::parse_from_rfc2822(i.pub_date().unwrap_or("")).unwrap();
 
             Paper {
                 title: title.to_string(),
@@ -132,7 +133,7 @@ fn main() {
             .button("Quit", |s| s.quit())
     );
 
-    pb.finish_and_clear();
+    //pb.finish_and_clear();
     
     siv.run();
 }
