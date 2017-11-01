@@ -2,11 +2,14 @@ extern crate chrono;
 extern crate cursive;
 extern crate cursive_table_view;
 extern crate indicatif;
+extern crate reqwest;
 extern crate rss;
 extern crate url;
+extern crate quick_xml;
 
 
 use std::fmt;
+use std::io::Read;
 use chrono::{DateTime, Utc};
 use cursive::Cursive;
 use cursive::align::HAlign::Center;
@@ -16,10 +19,12 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use indicatif::ProgressBar;
 use rss::Channel;
+use quick_xml::reader::Reader;
+use quick_xml::events::Event;
 use url::Url;
 
 
-static ARXIV: &'static str = "http://arxiv.org/rss/cs.CC";
+static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -85,11 +90,79 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
+fn parse_arxiv() -> Vec<Paper> {
+    enum Tag {Entry, Published, Title, Summary, Link, Nothing};
+    struct TmpPaper { published: Option<String>, title: Option<String>, summary: Option<String>, link: Option<String>};
+
+
+    //this is super inefficient!
+    let mut reqreader = reqwest::get(ARXIV).unwrap();
+    let mut resp = String::new();
+    reqreader.read_to_string(&mut resp);
+
+
+    
+    let mut reader = Reader::from_str(resp.as_str());
+    reader.trim_text(true);
+    let mut buf = Vec::new();
+    let mut tag = Tag::Nothing;
+    let mut entries: Vec<TmpPaper> = Vec::new();
+    let mut cur_paper: TmpPaper = TmpPaper { published: None, title: None, summary: None, link: None };
+    loop {    
+        match reader.read_event(&mut buf) {
+            Ok(Event::End(ref e)) => {
+                match e.name() {
+                    b"entry" => {tag = Tag::Nothing; entries.push(cur_paper); cur_paper = TmpPaper { published: None, title: None, summary: None, link: None};},
+                    _ =>        {tag = Tag::Entry;  },
+                }
+            },
+            Ok(Event::Start(ref e)) =>
+                match e.name() {
+                    b"entry"     => {tag = Tag::Entry; cur_paper = TmpPaper{published: None, title: None, summary: None, link: None};},
+                    b"published" => {tag = Tag::Published;},
+                    b"title"     => {tag = Tag::Title;},
+                    b"summary"   => {tag = Tag::Summary;},
+                    b"link"      => {tag = Tag::Link;},
+                    _ =>            {},
+                },
+            Ok(Event::Text(e)) => {
+                match tag {
+                    Tag::Published  => { cur_paper.published = Some(e.unescape_and_decode(&reader).unwrap())}, 
+                    Tag::Title      => { cur_paper.title     = Some(e.unescape_and_decode(&reader).unwrap())}, 
+                    Tag::Summary    => { cur_paper.summary   = Some(e.unescape_and_decode(&reader).unwrap())},
+                    Tag::Link       => { cur_paper.link      = Some(e.unescape_and_decode(&reader).unwrap())},
+                    Tag::Nothing | Tag::Entry => {},  
+                }
+
+
+                e.unescape_and_decode(&reader).unwrap();},
+            Ok(Event::Eof) => break,
+            Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
+             _ => (), // There are several other `Event`s we do not consider here
+        }
+    }
+
+    //converting tmp to real and testing
+    entries.into_iter().map(|p|
+                            Paper { title: p.title.unwrap(),
+                                    description: p.summary.unwrap(),
+                                    published: 0 /* p.published */,
+                                    link: Url::parse(p.link.unwrap().as_str()).unwrap(),
+                                    source: Source::Arxiv,
+                            }
+    ).collect::<Vec<Paper>>()
+}
+
 fn buildui() {
     
 }
 
 fn main() {
+    let res = parse_arxiv();
+    println!("{:?}", res);
+
+
+
     //let pb = ProgressBar::new_spinner();
     //pb.enable_steady_tick(100);
     
@@ -122,10 +195,6 @@ fn main() {
         .column(BasicColumn::Published, "Published", |c| c.ordering(std::cmp::Ordering::Greater));
     
     table.set_items(papers);
-
-    // let mut l = LinearLayout::horizontal()
-    //     .add_child(table);
-
 
     siv.add_layer(
         Dialog::around(table.with_id("table").min_size((50, 20)))
