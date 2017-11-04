@@ -24,7 +24,7 @@ use quick_xml::events::Event;
 use url::Url;
 
 
-static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
+static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=1";
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -60,7 +60,6 @@ impl BasicColumn {
             BasicColumn::Published => "Published",
         }
     }
-
 }
 
 #[derive(Clone, Debug)]
@@ -68,7 +67,7 @@ struct Paper {
     title: String,
     description: String,
     link: url::Url,
-    source: Source, 
+    source: Source,
     published: i64, //in unix epoch
 }
 
@@ -81,81 +80,146 @@ impl TableViewItem<BasicColumn> for Paper {
         }
     }
 
-    fn cmp(&self, other: &Self, column: BasicColumn) -> std::cmp::Ordering where Self: Sized {
+    fn cmp(&self, other: &Self, column: BasicColumn) -> std::cmp::Ordering
+        where Self: Sized
+    {
         match column {
-            BasicColumn::Title     => self.title.cmp(&other.title),
-            BasicColumn::Source    => self.source.cmp(&other.source),
+            BasicColumn::Title => self.title.cmp(&other.title),
+            BasicColumn::Source => self.source.cmp(&other.source),
             BasicColumn::Published => self.published.cmp(&other.published),
         }
     }
 }
 
 fn parse_arxiv() -> Vec<Paper> {
-    enum Tag {Entry, Published, Title, Summary, Link, Nothing};
-    struct TmpPaper { published: Option<String>, title: Option<String>, summary: Option<String>, link: Option<String>};
+    enum Tag {
+        Entry,
+        Published,
+        Title,
+        Summary,
+        Link,
+        Nothing,
+    };
+    #[derive(Debug)]
+    struct TmpPaper {
+        published: Option<String>,
+        title: Option<String>,
+        summary: Option<String>,
+        link: Option<String>,
+    };
 
 
     //this is super inefficient!
     let mut reqreader = reqwest::get(ARXIV).unwrap();
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp);
+    println!("{}", resp);
 
 
-    
     let mut reader = Reader::from_str(resp.as_str());
     reader.trim_text(true);
     let mut buf = Vec::new();
     let mut tag = Tag::Nothing;
     let mut entries: Vec<TmpPaper> = Vec::new();
-    let mut cur_paper: TmpPaper = TmpPaper { published: None, title: None, summary: None, link: None };
-    loop {    
+    let mut cur_paper: TmpPaper = TmpPaper {
+        published: None,
+        title: None,
+        summary: None,
+        link: None,
+    };
+    loop {
         match reader.read_event(&mut buf) {
             Ok(Event::End(ref e)) => {
                 match e.name() {
-                    b"entry" => {tag = Tag::Nothing; entries.push(cur_paper); cur_paper = TmpPaper { published: None, title: None, summary: None, link: None};},
-                    _ =>        {tag = Tag::Entry;  },
+                    b"entry" => {
+                        tag = Tag::Nothing;
+                        entries.push(cur_paper);
+                        cur_paper = TmpPaper {
+                            published: None,
+                            title: None,
+                            summary: None,
+                            link: None,
+                        };
+                    }
+                    _ => {
+                        tag = Tag::Entry;
+                    }
                 }
-            },
-            Ok(Event::Start(ref e)) =>
+            }
+            Ok(Event::Start(ref e)) => {
                 match e.name() {
-                    b"entry"     => {tag = Tag::Entry; cur_paper = TmpPaper{published: None, title: None, summary: None, link: None};},
-                    b"published" => {tag = Tag::Published;},
-                    b"title"     => {tag = Tag::Title;},
-                    b"summary"   => {tag = Tag::Summary;},
-                    b"link"      => {tag = Tag::Link;},
-                    _ =>            {},
-                },
+                    b"entry" => {
+                        tag = Tag::Entry;
+                        cur_paper = TmpPaper {
+                            published: None,
+                            title: None,
+                            summary: None,
+                            link: None,
+                        };
+                    }
+                    b"published" => {
+                        tag = Tag::Published;
+                    }
+                    b"title" => {
+                        tag = Tag::Title;
+                    }
+                    b"summary" => {
+                        tag = Tag::Summary;
+                    }
+                    b"link" => {
+                        println!("STSDLKJFS");
+                        let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
+                        let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                            .unwrap()
+                            .unwrap()
+                            .value;
+                        let itowned: Vec<u8> = it.to_owned();
+                        let res: &str = std::str::from_utf8(it).unwrap();
+                        let ress = res.to_string().clone();
+                        cur_paper.link = Some(ress)
+                    }
+                    _ => {}
+                }
+            }
             Ok(Event::Text(e)) => {
                 match tag {
-                    Tag::Published  => { cur_paper.published = Some(e.unescape_and_decode(&reader).unwrap())}, 
-                    Tag::Title      => { cur_paper.title     = Some(e.unescape_and_decode(&reader).unwrap())}, 
-                    Tag::Summary    => { cur_paper.summary   = Some(e.unescape_and_decode(&reader).unwrap())},
-                    Tag::Link       => { cur_paper.link      = Some(e.unescape_and_decode(&reader).unwrap())},
-                    Tag::Nothing | Tag::Entry => {},  
+                    Tag::Published => {
+                        cur_paper.published = Some(e.unescape_and_decode(&reader).unwrap())
+                    } 
+                    Tag::Title => cur_paper.title = Some(e.unescape_and_decode(&reader).unwrap()), 
+                    Tag::Summary => {
+                        cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
+                    }
+                    Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
+                    Tag::Nothing | Tag::Entry => {}  
                 }
 
 
-                e.unescape_and_decode(&reader).unwrap();},
+                e.unescape_and_decode(&reader).unwrap();
+            }
             Ok(Event::Eof) => break,
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-             _ => (), // There are several other `Event`s we do not consider here
+            _ => (), // There are several other `Event`s we do not consider here
         }
     }
 
     //converting tmp to real and testing
-    entries.into_iter().map(|p|
-                            Paper { title: p.title.unwrap(),
-                                    description: p.summary.unwrap(),
-                                    published: 0 /* p.published */,
-                                    link: Url::parse(p.link.unwrap().as_str()).unwrap(),
-                                    source: Source::Arxiv,
-                            }
-    ).collect::<Vec<Paper>>()
+    entries
+        .into_iter()
+        .map(|p| {
+            println!("{:?}", p);
+            Paper {
+                title: p.title.unwrap(),
+                description: p.summary.unwrap(),
+                published: 0, /* p.published */
+                link: Url::parse("").unwrap(), //p.link.unwrap().as_str()).unwrap(),
+                source: Source::Arxiv,
+            }
+        })
+        .collect::<Vec<Paper>>()
 }
 
-fn buildui() {
-    
-}
+fn buildui() {}
 
 fn main() {
     let res = parse_arxiv();
@@ -165,7 +229,7 @@ fn main() {
 
     //let pb = ProgressBar::new_spinner();
     //pb.enable_steady_tick(100);
-    
+
     let channel = Channel::from_url(ARXIV).unwrap();
 
     let papers = channel
@@ -185,24 +249,29 @@ fn main() {
                 source: Source::Arxiv,
                 published: published.timestamp(),
             }
-        }).collect::<Vec<Paper>>();
+        })
+        .collect::<Vec<Paper>>();
 
 
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
-        .column(BasicColumn::Title, "Title", |c| c.ordering(std::cmp::Ordering::Greater))
-        .column(BasicColumn::Source, "Source",|c| c.ordering(std::cmp::Ordering::Greater))
-        .column(BasicColumn::Published, "Published", |c| c.ordering(std::cmp::Ordering::Greater));
-    
+        .column(BasicColumn::Title,
+                "Title",
+                |c| c.ordering(std::cmp::Ordering::Greater))
+        .column(BasicColumn::Source,
+                "Source",
+                |c| c.ordering(std::cmp::Ordering::Greater))
+        .column(BasicColumn::Published,
+                "Published",
+                |c| c.ordering(std::cmp::Ordering::Greater));
+
     table.set_items(papers);
 
-    siv.add_layer(
-        Dialog::around(table.with_id("table").min_size((50, 20)))
-            .title("Table View")
-            .button("Quit", |s| s.quit())
-    );
+    siv.add_layer(Dialog::around(table.with_id("table").min_size((50, 20)))
+                      .title("Table View")
+                      .button("Quit", |s| s.quit()));
 
     //pb.finish_and_clear();
-    
+
     siv.run();
 }
