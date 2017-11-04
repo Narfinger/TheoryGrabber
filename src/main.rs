@@ -176,9 +176,26 @@ fn parse_arxiv() -> Vec<Paper> {
                         let itowned: Vec<u8> = it.to_owned();
                         let res: &str = std::str::from_utf8(it).unwrap();
                         let ress = res.to_string().clone();
-                        cur_paper.link = Some(ress)
+                        cur_paper.link = Some(ress);
                     }
                     _ => {}
+                }
+            }
+            Ok(Event::Empty(e)) => {
+                match e.name() {
+                    b"link" => {
+                        let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
+                        let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                            .unwrap()
+                            .unwrap()
+                            .value;
+                        let itowned: Vec<u8> = it.to_owned();
+                        let res: &str = std::str::from_utf8(it).unwrap();
+                        let ress = res.to_string().clone();
+                        cur_paper.link = Some(ress);
+                    }
+                    _ => {}
+
                 }
             }
             Ok(Event::Text(e)) => {
@@ -190,8 +207,8 @@ fn parse_arxiv() -> Vec<Paper> {
                     Tag::Summary => {
                         cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
                     }
-                    Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
-                    Tag::Nothing | Tag::Entry => {}  
+                    //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
+                    Tag::Link | Tag::Nothing | Tag::Entry => {}  
                 }
 
 
@@ -203,6 +220,8 @@ fn parse_arxiv() -> Vec<Paper> {
         }
     }
 
+
+    println!("PARSING DONE");
     //converting tmp to real and testing
     entries
         .into_iter()
@@ -212,7 +231,7 @@ fn parse_arxiv() -> Vec<Paper> {
                 title: p.title.unwrap(),
                 description: p.summary.unwrap(),
                 published: 0, /* p.published */
-                link: Url::parse("").unwrap(), //p.link.unwrap().as_str()).unwrap(),
+                link: Url::parse(p.link.unwrap().as_str()).unwrap(),
                 source: Source::Arxiv,
             }
         })
