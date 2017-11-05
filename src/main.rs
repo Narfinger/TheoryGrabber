@@ -14,7 +14,7 @@ use chrono::{DateTime, Utc};
 use cursive::Cursive;
 use cursive::align::HAlign::Center;
 use cursive::align::HAlign;
-use cursive::views::{Dialog, LinearLayout, TextView};
+use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
 use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use indicatif::ProgressBar;
@@ -24,7 +24,7 @@ use quick_xml::events::Event;
 use url::Url;
 
 
-static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=1";
+static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=10";
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -69,12 +69,28 @@ struct Paper {
     link: url::Url,
     source: Source,
     published: i64, //in unix epoch
+    authors: Vec<String>,
+}
+
+fn print_authors(paper: &Paper) -> String {
+    if let Some(x) = paper.authors.first() {
+        paper
+            .authors
+            .iter()
+            .fold("".to_string(), |acc, ref x| acc + " and " + x.as_str())
+    } else {
+        "".to_string()
+    }
 }
 
 impl TableViewItem<BasicColumn> for Paper {
     fn to_column(&self, column: BasicColumn) -> String {
         match column {
-            BasicColumn::Title => self.title.to_owned(),
+            BasicColumn::Title => {
+                let mut res = self.title.replace("\n", "").to_owned();
+                res.truncate(120);
+                res
+            }
             BasicColumn::Source => format!("{}", self.source),
             BasicColumn::Published => format!("{}", self.published),
         }
@@ -95,6 +111,7 @@ fn parse_arxiv() -> Vec<Paper> {
     enum Tag {
         Entry,
         Published,
+        Author,
         Title,
         Summary,
         Link,
@@ -106,6 +123,7 @@ fn parse_arxiv() -> Vec<Paper> {
         title: Option<String>,
         summary: Option<String>,
         link: Option<String>,
+        authors: Vec<String>,
     };
 
 
@@ -126,6 +144,7 @@ fn parse_arxiv() -> Vec<Paper> {
         title: None,
         summary: None,
         link: None,
+        authors: Vec::new(),
     };
     loop {
         match reader.read_event(&mut buf) {
@@ -139,6 +158,7 @@ fn parse_arxiv() -> Vec<Paper> {
                             title: None,
                             summary: None,
                             link: None,
+                            authors: Vec::new(),
                         };
                     }
                     _ => {
@@ -155,6 +175,7 @@ fn parse_arxiv() -> Vec<Paper> {
                             title: None,
                             summary: None,
                             link: None,
+                            authors: Vec::new(),
                         };
                     }
                     b"published" => {
@@ -165,6 +186,9 @@ fn parse_arxiv() -> Vec<Paper> {
                     }
                     b"summary" => {
                         tag = Tag::Summary;
+                    }
+                    b"author" => {
+                        tag = Tag::Author;
                     }
                     b"link" => {
                         println!("STSDLKJFS");
@@ -207,6 +231,11 @@ fn parse_arxiv() -> Vec<Paper> {
                     Tag::Summary => {
                         cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
                     }
+                    Tag::Author => {
+                        cur_paper
+                            .authors
+                            .push(e.unescape_and_decode(&reader).unwrap())
+                    }
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
                     Tag::Link | Tag::Nothing | Tag::Entry => {}  
                 }
@@ -233,6 +262,7 @@ fn parse_arxiv() -> Vec<Paper> {
                 published: 0, /* p.published */
                 link: Url::parse(p.link.unwrap().as_str()).unwrap(),
                 source: Source::Arxiv,
+                authors: p.authors,
             }
         })
         .collect::<Vec<Paper>>()
@@ -287,20 +317,27 @@ fn main() {
     table.set_items(papers);
     table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
 
-        let value = siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
-                format!("{:?}", table.borrow_item(index).unwrap().title)
-
-            })
+        let value: Paper = siv.call_on_id("table",
+                                          move |table: &mut TableView<Paper, BasicColumn>| {
+                                              table.borrow_item(index).unwrap().clone()
+                                          })
             .unwrap();
 
-        siv.add_layer(Dialog::around(TextView::new(value))
+        let d = LinearLayout::vertical()
+            .child(TextView::new(value.title.clone()))
+            .child(DummyView)
+            .child(TextView::new(print_authors(&value)))
+            .child(DummyView)
+            .child(TextView::new(value.description.clone()));
+
+        siv.add_layer(Dialog::around(d)
                           .title(format!("Removing row # {}", row))
-                          .button("Close", move |s| {
+                          .button("Delete", move |s| {
             s.call_on_id("table",
                          |table: &mut TableView<Paper, BasicColumn>| { table.remove_item(index); });
             s.pop_layer()
-        }));
-
+        })
+                          .button("Close", move |s| s.pop_layer()));
     });
 
     siv.add_layer(Dialog::around(table.with_id("table").min_size((500, 80)))
