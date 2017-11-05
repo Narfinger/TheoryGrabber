@@ -1,13 +1,3 @@
-extern crate chrono;
-extern crate cursive;
-extern crate cursive_table_view;
-extern crate indicatif;
-extern crate reqwest;
-extern crate rss;
-extern crate url;
-extern crate quick_xml;
-
-
 use std::fmt;
 use std::io::Read;
 use chrono::{DateTime, Utc};

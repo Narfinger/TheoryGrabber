@@ -7,6 +7,9 @@ authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 chrono = "0.4"              # Date and time library for Rust
 cursive = "0.7"            # A TUI (Text User Interface) library focused on ease-of-use.
 cursive_table_view = "0.4" # A basic table view implementation for cursive.
+diesel = {version = "0.16", features = ["sqlite"]}
+diesel_codegen = {version = "0.16", features = ["sqlite"]}
+dotenv = "0.10"
 indicatif = "0.8"    # A progress bar and cli reporting library for Rust
 reqwest = "0.8"             # higher level HTTP client library
 rss = {version = "1.1", features = ["from_url"]}                # Library for serializing the RSS web content syndication format
