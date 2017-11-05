@@ -226,7 +226,7 @@ fn parse_arxiv() -> Vec<Paper> {
     entries
         .into_iter()
         .map(|p| {
-            println!("{:?}", p);
+            //println!("{:?}", p);
             Paper {
                 title: p.title.unwrap(),
                 description: p.summary.unwrap(),
@@ -241,42 +241,42 @@ fn parse_arxiv() -> Vec<Paper> {
 fn buildui() {}
 
 fn main() {
-    let res = parse_arxiv();
-    println!("{:?}", res);
+    let papers = parse_arxiv();
+    //println!("{:?}", res);
 
 
 
     //let pb = ProgressBar::new_spinner();
     //pb.enable_steady_tick(100);
 
-    let channel = Channel::from_url(ARXIV).unwrap();
+    // let channel = Channel::from_url(ARXIV).unwrap();
 
-    let papers = channel
-        .items()
-        .into_iter()
-        .map(|i| {
-            let title = i.title().unwrap();
-            let description = i.description().unwrap();
-            let link = i.link().unwrap();
-            println!("{}", i.pub_date().unwrap());
-            let published = DateTime::parse_from_rfc2822(i.pub_date().unwrap_or("")).unwrap();
+    // let papers = channel
+    //     .items()
+    //     .into_iter()
+    //     .map(|i| {
+    //         let title = i.title().unwrap();
+    //         let description = i.description().unwrap();
+    //         let link = i.link().unwrap();
+    //         println!("{}", i.pub_date().unwrap());
+    //         let published = DateTime::parse_from_rfc2822(i.pub_date().unwrap_or("")).unwrap();
 
-            Paper {
-                title: title.to_string(),
-                description: description.to_string(),
-                link: Url::parse(link).unwrap(),
-                source: Source::Arxiv,
-                published: published.timestamp(),
-            }
-        })
-        .collect::<Vec<Paper>>();
+    //         Paper {
+    //             title: title.to_string(),
+    //             description: description.to_string(),
+    //             link: Url::parse(link).unwrap(),
+    //             source: Source::Arxiv,
+    //             published: published.timestamp(),
+    //         }
+    //     })
+    //     .collect::<Vec<Paper>>();
 
 
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
         .column(BasicColumn::Title,
                 "Title",
-                |c| c.ordering(std::cmp::Ordering::Greater))
+                |c| c.ordering(std::cmp::Ordering::Greater).width_percent(75))
         .column(BasicColumn::Source,
                 "Source",
                 |c| c.ordering(std::cmp::Ordering::Greater))
@@ -285,8 +285,25 @@ fn main() {
                 |c| c.ordering(std::cmp::Ordering::Greater));
 
     table.set_items(papers);
+    table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
 
-    siv.add_layer(Dialog::around(table.with_id("table").min_size((50, 20)))
+        let value = siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+                format!("{:?}", table.borrow_item(index).unwrap().title)
+
+            })
+            .unwrap();
+
+        siv.add_layer(Dialog::around(TextView::new(value))
+                          .title(format!("Removing row # {}", row))
+                          .button("Close", move |s| {
+            s.call_on_id("table",
+                         |table: &mut TableView<Paper, BasicColumn>| { table.remove_item(index); });
+            s.pop_layer()
+        }));
+
+    });
+
+    siv.add_layer(Dialog::around(table.with_id("table").min_size((500, 80)))
                       .title("Table View")
                       .button("Quit", |s| s.quit()));
 
