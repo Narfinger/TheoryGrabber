@@ -4,12 +4,27 @@
 extern crate chrono;
 extern crate cursive;
 extern crate cursive_table_view;
-extern crate dotenv;
+#[macro_use]
+extern crate error_chain;
 extern crate indicatif;
 extern crate reqwest;
 extern crate rss;
+extern crate serde_yaml;
+#[macro_use]
+extern crate serde_derive;
 extern crate url;
 extern crate quick_xml;
+
+mod errors {
+    error_chain!{
+        foreign_links {
+            Io(::std::io::Error);
+            Serde(::serde_yaml::Error);
+        }
+    }
+}
+
+pub mod config;
 
 use std::fmt;
 use std::io::Read;

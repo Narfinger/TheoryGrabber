@@ -4,11 +4,15 @@ version = "0.1.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 
 [dependencies]
-chrono = "0.4"              # Date and time library for Rust
+chrono = {version = "0.4", features = ["serde"]}              # Date and time library for Rust
 cursive = "0.7"            # A TUI (Text User Interface) library focused on ease-of-use.
 cursive_table_view = "0.4" # A basic table view implementation for cursive.
+error-chain = "0.11"           # Yet another error boilerplate library.
 indicatif = "0.8"    # A progress bar and cli reporting library for Rust
 reqwest = "0.8"             # higher level HTTP client library
 rss = {version = "1.1", features = ["from_url"]}                # Library for serializing the RSS web content syndication format
+serde = "1.0"                      # A generic serialization/deserialization framework
+serde_derive = "1.0"               # Macros 1.1 implementation of #[derive(Serialize, Deserialize)]
+serde_yaml = "0.7"               # YAML support for Serde
 quick-xml = "0.9"               # High performance xml reader and writer
 url = "1.5"                  # URL library for Rust, based on the WHATWG URL Standard
