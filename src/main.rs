@@ -5,17 +5,11 @@ extern crate chrono;
 extern crate cursive;
 extern crate cursive_table_view;
 extern crate dotenv;
-#[macro_use]
-extern crate diesel_codegen;
-#[macro_use]
-extern crate diesel;
 extern crate indicatif;
 extern crate reqwest;
 extern crate rss;
 extern crate url;
 extern crate quick_xml;
-
-pub mod schema;
 
 use std::fmt;
 use std::io::Read;
