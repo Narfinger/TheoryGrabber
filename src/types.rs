@@ -33,7 +33,7 @@ pub fn print_authors(paper: &Paper) -> String {
     paper
         .authors
         .iter()
-        .fold("".to_string(), |acc, ref x| acc + " and " + x.as_str())
+        .fold("".to_string(), |acc, x| acc + " and " + x.as_str())
     //} else {
     //    "".to_string()
     //}

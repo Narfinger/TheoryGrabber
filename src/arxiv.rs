@@ -108,20 +108,16 @@ pub fn parse_arxiv() -> Vec<Paper> {
                 }
             }
             Ok(Event::Empty(e)) => {
-                match e.name() {
-                    b"link" => {
-                        let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                        let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
-                            .unwrap()
-                            .unwrap()
-                            .value;
-                        //let itowned: Vec<u8> = it.to_owned();
-                        let res: &str = std::str::from_utf8(it).unwrap();
-                        let ress = res.to_string().clone();
-                        cur_paper.link = Some(ress);
-                    }
-                    _ => {}
-
+                if let b"link" = e.name() {
+                    let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
+                    let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                        .unwrap()
+                        .unwrap()
+                        .value;
+                    //let itowned: Vec<u8> = it.to_owned();
+                    let res: &str = std::str::from_utf8(it).unwrap();
+                    let ress = res.to_string().clone();
+                    cur_paper.link = Some(ress);
                 }
             }
             Ok(Event::Text(e)) => {
@@ -139,7 +135,7 @@ pub fn parse_arxiv() -> Vec<Paper> {
                             .push(e.unescape_and_decode(&reader).unwrap())
                     }
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
-                    Tag::Nothing | Tag::Entry => {}
+                    Tag::Nothing | Tag::Entry => {}  
                 }
 
 
