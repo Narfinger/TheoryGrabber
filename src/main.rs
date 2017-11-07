@@ -79,8 +79,6 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-fn buildui() {}
-
 fn main() {
     let papers = parse_arxiv();
     //println!("{:?}", res);

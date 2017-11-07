@@ -17,7 +17,6 @@ pub fn parse_arxiv() -> Vec<Paper> {
         Author,
         Title,
         Summary,
-        Link,
         Nothing,
     };
     #[derive(Debug)]
@@ -116,7 +115,7 @@ pub fn parse_arxiv() -> Vec<Paper> {
                             .unwrap()
                             .unwrap()
                             .value;
-                        let itowned: Vec<u8> = it.to_owned();
+                        //let itowned: Vec<u8> = it.to_owned();
                         let res: &str = std::str::from_utf8(it).unwrap();
                         let ress = res.to_string().clone();
                         cur_paper.link = Some(ress);
@@ -140,7 +139,7 @@ pub fn parse_arxiv() -> Vec<Paper> {
                             .push(e.unescape_and_decode(&reader).unwrap())
                     }
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
-                    Tag::Link | Tag::Nothing | Tag::Entry => {}  
+                    Tag::Nothing | Tag::Entry => {}
                 }
 
 
