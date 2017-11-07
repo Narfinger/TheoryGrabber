@@ -1,7 +1,6 @@
 use chrono;
 use errors::*;
 use std::fs::File;
-use std::io;
 use std::io::Write;
 use serde_yaml;
 
@@ -21,5 +20,5 @@ pub fn write_config_time(time: chrono::DateTime<chrono::Utc>) -> Result<()> {
     let c = Config { last_checked: time };
     //serde_yaml::to_writer(&c, &mut file)?
     let st = serde_yaml::to_string(&c)?;
-    file.write_all(st.as_bytes())
+    file.write_all(st.as_bytes()).chain_err(|| "Cannot write")
 }
