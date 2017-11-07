@@ -33,6 +33,7 @@ use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
 use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use indicatif::ProgressBar;
+use std::{thread, time};
 use types::{Paper, print_authors};
 use arxiv::parse_arxiv;
 
@@ -79,6 +80,24 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
+
+fn download_papers(papers: Vec<Paper>) {
+    println!("{:?}", papers);
+    println!("DOING STUFF");
+}
+
+fn download_callback(s: &mut cursive::Cursive) {
+    let papers: Vec<Paper> =
+        s.call_on_id("table",
+                        move |table: &mut TableView<Paper, BasicColumn>| table.take_items())
+            .unwrap();
+    println!("before");
+
+    //cursive on kill, kills this function so we need to have a new thread
+    thread::spawn(move || { download_papers(papers); });
+    s.quit();
+}
+
 fn build_gui(papers: Vec<Paper>) {
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
@@ -120,6 +139,7 @@ fn build_gui(papers: Vec<Paper>) {
 
     siv.add_layer(Dialog::around(table.with_id("table").min_size((500, 80)))
                       .title("Table View")
+                      .button("Download all", |s| download_callback(s))
                       .button("Quit", |s| s.quit()));
 
     //pb.finish_and_clear();

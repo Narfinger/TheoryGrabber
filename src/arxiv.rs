@@ -34,8 +34,6 @@ pub fn parse_arxiv() -> Vec<Paper> {
     let mut reqreader = reqwest::get(ARXIV).unwrap();
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp);
-    println!("{}", resp);
-
 
     let mut reader = Reader::from_str(resp.as_str());
     reader.trim_text(true);
@@ -94,7 +92,6 @@ pub fn parse_arxiv() -> Vec<Paper> {
                         tag = Tag::Author;
                     }
                     b"link" => {
-                        println!("STSDLKJFS");
                         let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
                         let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
                             .unwrap()
@@ -149,7 +146,6 @@ pub fn parse_arxiv() -> Vec<Paper> {
     }
 
 
-    println!("PARSING DONE");
     //converting tmp to real and testing
     entries
         .into_iter()
