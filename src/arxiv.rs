@@ -1,3 +1,4 @@
+use chrono;
 use std::io::Read;
 use reqwest;
 use std;
@@ -157,7 +158,9 @@ pub fn parse_arxiv() -> Vec<Paper> {
             Paper {
                 title: p.title.unwrap(),
                 description: p.summary.unwrap(),
-                published: 0, /* p.published */
+                published: chrono::DateTime::parse_from_rfc3339(p.published.unwrap().as_str())
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
                 link: Url::parse(p.link.unwrap().as_str()).unwrap(),
                 source: Source::Arxiv,
                 authors: p.authors,

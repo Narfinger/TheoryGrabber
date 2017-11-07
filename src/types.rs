@@ -1,3 +1,4 @@
+use chrono;
 use std::fmt;
 use url;
 
@@ -24,7 +25,7 @@ pub struct Paper {
     pub description: String,
     pub link: url::Url,
     pub source: Source,
-    pub published: i64, //in unix epoch
+    pub published: chrono::DateTime<chrono::Utc>,
     pub authors: Vec<String>,
 }
 
@@ -37,4 +38,12 @@ pub fn print_authors(paper: &Paper) -> String {
     //} else {
     //    "".to_string()
     //}
+}
+
+
+pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
+    paper
+        .into_iter()
+        .filter(|p| p.published > date)
+        .collect::<Vec<Paper>>()
 }

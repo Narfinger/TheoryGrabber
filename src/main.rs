@@ -79,38 +79,7 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-fn main() {
-    let papers = parse_arxiv();
-    //println!("{:?}", res);
-
-
-
-    //let pb = ProgressBar::new_spinner();
-    //pb.enable_steady_tick(100);
-
-    // let channel = Channel::from_url(ARXIV).unwrap();
-
-    // let papers = channel
-    //     .items()
-    //     .into_iter()
-    //     .map(|i| {
-    //         let title = i.title().unwrap();
-    //         let description = i.description().unwrap();
-    //         let link = i.link().unwrap();
-    //         println!("{}", i.pub_date().unwrap());
-    //         let published = DateTime::parse_from_rfc2822(i.pub_date().unwrap_or("")).unwrap();
-
-    //         Paper {
-    //             title: title.to_string(),
-    //             description: description.to_string(),
-    //             link: Url::parse(link).unwrap(),
-    //             source: Source::Arxiv,
-    //             published: published.timestamp(),
-    //         }
-    //     })
-    //     .collect::<Vec<Paper>>();
-
-
+fn build_gui(papers: Vec<Paper>) {
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
         .column(BasicColumn::Title,
@@ -156,4 +125,15 @@ fn main() {
     //pb.finish_and_clear();
 
     siv.run();
+
+}
+
+fn main() {
+    let papers = parse_arxiv();
+    let utc = config::read_config_time_or_default();
+    let filtered_papers = types::filter_papers(papers, utc);
+    //currently disabled
+    //config::write_now();
+
+    build_gui(filtered_papers);
 }
