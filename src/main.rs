@@ -81,9 +81,12 @@ impl TableViewItem<BasicColumn> for Paper {
 }
 
 
-fn download_papers(papers: Vec<Paper>) {
+fn download_papers(papers: &[Paper]) {
     println!("{:?}", papers);
     println!("DOING STUFF");
+    let ten_millis = time::Duration::from_millis(1000);
+    //this quits now
+    thread::sleep(ten_millis);
 }
 
 fn download_callback(s: &mut cursive::Cursive) {
@@ -94,7 +97,7 @@ fn download_callback(s: &mut cursive::Cursive) {
     println!("before");
 
     //cursive on kill, kills this function so we need to have a new thread
-    thread::spawn(move || { download_papers(papers); });
+    thread::spawn(move || { download_papers(&papers); });
     s.quit();
 }
 

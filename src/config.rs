@@ -17,7 +17,7 @@ fn read_config_time() -> Result<chrono::DateTime<chrono::Utc>> {
 }
 
 pub fn read_config_time_or_default() -> chrono::DateTime<chrono::Utc> {
-    read_config_time().unwrap_or(chrono::Utc.ymd(1985, 1, 1).and_hms(0, 0, 1))
+    read_config_time().unwrap_or_else(|_| chrono::Utc.ymd(1985, 1, 1).and_hms(0, 0, 1))
 }
 
 fn write_config_time(time: chrono::DateTime<chrono::Utc>) -> Result<()> {
