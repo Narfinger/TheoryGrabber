@@ -34,6 +34,7 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use indicatif::ProgressBar;
 use std::{thread, time};
+use std::rc::Rc;
 use types::{Paper, print_authors};
 use arxiv::parse_arxiv;
 
@@ -89,66 +90,63 @@ fn download_papers(papers: &[Paper]) {
     thread::sleep(ten_millis);
 }
 
-fn download_callback(s: &mut cursive::Cursive) {
-    let papers: Vec<Paper> =
-        s.call_on_id("table",
-                        move |table: &mut TableView<Paper, BasicColumn>| table.take_items())
-            .unwrap();
-    println!("before");
+fn build_gui(papers: Vec<Paper>, download: Rc<bool>) -> Vec<Paper> {
+    let mut quit = false;
+    let mut p: Vec<Paper> = Vec::new();
+    {
+        let mut siv = Cursive::new();
+        let mut table = TableView::<Paper, BasicColumn>::new()
+            .column(BasicColumn::Title,
+                    "Title",
+                    |c| c.ordering(std::cmp::Ordering::Greater).width_percent(75))
+            .column(BasicColumn::Source,
+                    "Source",
+                    |c| c.ordering(std::cmp::Ordering::Greater))
+            .column(BasicColumn::Published,
+                    "Published",
+                    |c| c.ordering(std::cmp::Ordering::Greater));
 
-    //cursive on kill, kills this function so we need to have a new thread
-    thread::spawn(move || { download_papers(&papers); });
-    s.quit();
-}
+        table.set_items(papers);
+        table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
 
-fn build_gui(papers: Vec<Paper>) {
-    let mut siv = Cursive::new();
-    let mut table = TableView::<Paper, BasicColumn>::new()
-        .column(BasicColumn::Title,
-                "Title",
-                |c| c.ordering(std::cmp::Ordering::Greater).width_percent(75))
-        .column(BasicColumn::Source,
-                "Source",
-                |c| c.ordering(std::cmp::Ordering::Greater))
-        .column(BasicColumn::Published,
-                "Published",
-                |c| c.ordering(std::cmp::Ordering::Greater));
+            let value: Paper = siv.call_on_id("table",
+                                              move |table: &mut TableView<Paper, BasicColumn>| {
+                                                  table.borrow_item(index).unwrap().clone()
+                                              })
+                .unwrap();
 
-    table.set_items(papers);
-    table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
+            let d = LinearLayout::vertical()
+                .child(TextView::new(value.title.clone()))
+                .child(DummyView)
+                .child(TextView::new(print_authors(&value)))
+                .child(DummyView)
+                .child(TextView::new(value.description.clone()));
 
-        let value: Paper = siv.call_on_id("table",
-                                          move |table: &mut TableView<Paper, BasicColumn>| {
-                                              table.borrow_item(index).unwrap().clone()
-                                          })
-            .unwrap();
+            siv.add_layer(Dialog::around(d)
+                              .title(format!("Removing row # {}", row))
+                              .button("Delete", move |s| {
+                s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+                    table.remove_item(index);
+                });
+                                  s.pop_layer()
+            })
+                              .button("Close", move |s| s.pop_layer()));
+        });
 
-        let d = LinearLayout::vertical()
-            .child(TextView::new(value.title.clone()))
-            .child(DummyView)
-            .child(TextView::new(print_authors(&value)))
-            .child(DummyView)
-            .child(TextView::new(value.description.clone()));
+        siv.add_layer(Dialog::around(table.with_id("table").min_size((500, 80)))
+                          .title("Table View")
+                      .button("Download all", move |s| {
+                          *Rc::get_mut(&mut download).unwrap() = true;
+                      s.quit()})
+                          .button("Quit", |s| s.quit()));
 
-        siv.add_layer(Dialog::around(d)
-                          .title(format!("Removing row # {}", row))
-                          .button("Delete", move |s| {
-            s.call_on_id("table",
-                         |table: &mut TableView<Paper, BasicColumn>| { table.remove_item(index); });
-            s.pop_layer()
-        })
-                          .button("Close", move |s| s.pop_layer()));
-    });
+        //pb.finish_and_clear();
 
-    siv.add_layer(Dialog::around(table.with_id("table").min_size((500, 80)))
-                      .title("Table View")
-                      .button("Download all", |s| download_callback(s))
-                      .button("Quit", |s| s.quit()));
-
-    //pb.finish_and_clear();
-
-    siv.run();
-
+        siv.run();
+        siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+            table.take_items()
+        }).unwrap()
+    }
 }
 
 fn main() {
@@ -157,6 +155,8 @@ fn main() {
     let filtered_papers = types::filter_papers(papers, utc);
     //currently disabled
     //config::write_now();
-
-    build_gui(filtered_papers);
+    
+    let mut download = Rc::new(false);
+    let filtered_papers = build_gui(filtered_papers, download);
+    println!("{:?}", filtered_papers);
 }
