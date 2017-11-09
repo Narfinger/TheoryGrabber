@@ -34,6 +34,10 @@ use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
 use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use indicatif::ProgressBar;
+use std::io::copy;
+use std::fs::File;
+use std::path::Path;
+use std::{thread, time};
 use types::{Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
@@ -82,12 +86,17 @@ impl TableViewItem<BasicColumn> for Paper {
 }
 
 
-fn download_papers(papers: &[Paper]) {
+fn download_papers(papers: &[Paper], dir: &TempDir) {
     let progressbar = ProgressBar::new(papers.len() as u64);
-    if let Ok(dir) = TempDir::new("TheoryGrabber") {
-        for i in papers {
-            progressbar.inc(1);
-        }
+    for i in papers {
+        progressbar.inc(1);
+        let sanitized_title = i.title.replace("\n", "").replace("  ", " ");
+        let mut response = reqwest::get(i.link.clone()).unwrap();
+        let filename = Path::new("").with_file_name(sanitized_title).with_extension("pdf");
+        let savefile = dir.path().join(filename);
+//        println!("{:?}",savefile);
+        let mut file = File::create(savefile).unwrap();
+        copy(&mut response, &mut file);
     }
     progressbar.finish();
 }
@@ -118,6 +127,8 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
             .child(TextView::new(value.title.clone()))
             .child(DummyView)
             .child(TextView::new(print_authors(&value)))
+            .child(DummyView)
+            .child(TextView::new(value.link.clone().to_string()))
             .child(DummyView)
             .child(TextView::new(value.description.clone()));
 
@@ -159,8 +170,12 @@ fn main() {
     //config::write_now();
     
     let filtered_papers = build_gui(filtered_papers);
-    download_papers(&filtered_papers);
-    
+    if let Ok(dir) = TempDir::new("TheoryGrabber") {
+        download_papers(&filtered_papers, &dir);
+
+        let ten_millis = time::Duration::from_millis(1000);
+        thread::sleep(ten_millis);
+    }
     
     //    println!("{:?}", filtered_papers);
 }
