@@ -14,5 +14,6 @@ rss = {version = "1.1", features = ["from_url"]}                # Library for se
 serde = "1.0"                      # A generic serialization/deserialization framework
 serde_derive = "1.0"               # Macros 1.1 implementation of #[derive(Serialize, Deserialize)]
 serde_yaml = "0.7"               # YAML support for Serde
+tempdir = "0.3"           # A library for managing a temporary directory and deleting all contents when it's dropped. 
 quick-xml = "0.9"               # High performance xml reader and writer
 url = "1.5"                  # URL library for Rust, based on the WHATWG URL Standard
