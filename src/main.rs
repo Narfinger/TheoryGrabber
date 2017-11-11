@@ -47,6 +47,7 @@ use std::{thread, time};
 use types::{Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
+use drive::{setup_oauth2, upload_file};
 
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
@@ -91,7 +92,8 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-fn download_papers(papers: &[Paper], dir: &TempDir) {
+fn download_papers(papers: &[Paper], dir: &TempDir) -> Vec<File> {
+    let mut files: Vec<File>  = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
     for i in papers {
         progressbar.inc(1);
@@ -102,8 +104,12 @@ fn download_papers(papers: &[Paper], dir: &TempDir) {
 //        println!("{:?}",savefile);
         let mut file = File::create(savefile).unwrap();
         copy(&mut response, &mut file);
+
+        files.push(file);
     }
     progressbar.finish();
+
+    files
 }
 
 fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
@@ -176,12 +182,15 @@ fn main() {
     
     let filtered_papers = build_gui(filtered_papers);
     if let Ok(dir) = TempDir::new("TheoryGrabber") {
-        download_papers(&filtered_papers, &dir);
+        let files = download_papers(&filtered_papers, &dir);
 
-        let ten_millis = time::Duration::from_millis(1000);
-        thread::sleep(ten_millis);
+        // let ten_millis = time::Duration::from_millis(1000);
+        // thread::sleep(ten_millis);
+        println!("Trying to upload first file");
 
-        
+        let file = files.first().unwrap();
+        let tk = setup_oauth2();
+        upload_file(tk, file);
 
     }
     

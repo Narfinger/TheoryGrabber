@@ -1,4 +1,5 @@
 use hyper;
+#[macro_use]
 use hyper::net::HttpsConnector;
 use hyper_rustls;
 use oauth2;
@@ -6,10 +7,15 @@ use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecr
              DiskTokenStorage, GetToken, FlowType};
 use std::fs::File;
 use std;
+use reqwest;
+use reqwest::mime;
+use reqwest::header::{Headers, UserAgent, ContentType};
 use serde_json as json;
 use tokio_core;
 
-pub fn setup_oauth() -> oauth2::Token {
+static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3?uploadType=media?access_token=";
+
+pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
     let secret = json::from_reader::<File,ConsoleApplicationSecret>(f).unwrap().installed.unwrap();
     let mut cwd = std::env::current_dir().unwrap();
@@ -27,9 +33,23 @@ pub fn setup_oauth() -> oauth2::Token {
                                     client,
                                     ntk,
                                     Some(FlowType::InstalledInteractive))
-        .token(&["https://www.googleapis.com/auth/drive3"]);
+        .token(&["https://www.googleapis.com/auth/drive.file"]);
     if let Err(e) = realtk {
         panic!("Error in token generation: {:?}", e);
     }
     realtk.unwrap()
+}
+
+pub fn upload_file(tk: oauth2::Token, f: &File) {
+    let mut url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
+    
+    let client = reqwest::Client::new();
+    let mut header = Headers::new();
+    let mime: mime::Mime = "application/pdf".parse().unwrap();
+
+    header.set(ContentType(mime));
+    //header.set_raw("content-lenth", length);
+    
+    let res = client.post(url.as_str()).headers(header).body(f).send();
+    println!("{:?}", res);
 }
