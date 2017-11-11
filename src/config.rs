@@ -28,6 +28,6 @@ fn write_config_time(time: chrono::DateTime<chrono::Utc>) -> Result<()> {
     file.write_all(st.as_bytes()).chain_err(|| "Cannot write")
 }
 
-pub fn write_now() {
-    write_config_time(chrono::Utc::now());
+pub fn write_now() -> Result<()> {
+    write_config_time(chrono::Utc::now()).chain_err(|| "Cannot write current time")
 }

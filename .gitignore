@@ -1,2 +1,4 @@
 /target/
 **/*.rs.bk
+client_secret.json
+/tk

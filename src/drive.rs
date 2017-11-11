@@ -1,5 +1,5 @@
+use errors::*;
 use hyper;
-#[macro_use]
 use hyper::net::HttpsConnector;
 use hyper_rustls;
 use oauth2;
@@ -9,9 +9,8 @@ use std::fs::File;
 use std;
 use reqwest;
 use reqwest::mime;
-use reqwest::header::{Headers, UserAgent, ContentType};
+use reqwest::header::{Headers, ContentType};
 use serde_json as json;
-use tokio_core;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3?uploadType=media?access_token=";
 
@@ -40,16 +39,22 @@ pub fn setup_oauth2() -> oauth2::Token {
     realtk.unwrap()
 }
 
-pub fn upload_file(tk: oauth2::Token, f: &File) {
-    let mut url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
+pub fn upload_file(tk: &oauth2::Token, f: File) -> Result<()> {
+    let url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
     
     let client = reqwest::Client::new();
     let mut header = Headers::new();
-    let mime: mime::Mime = "application/pdf".parse().unwrap();
+    let mime: mime::Mime = "application/pdf".parse().chain_err(|| "Cannot convert to pdf mime type")?;
 
     header.set(ContentType(mime));
     //header.set_raw("content-lenth", length);
+
+    println!("We got everything done expect sending");
+
     
-    let res = client.post(url.as_str()).headers(header).body(f).send();
-    println!("{:?}", res);
+    
+    let res = client.post(url.as_str()).headers(header).body(f).send().chain_err(|| "Error in uploading");
+    println!("client result: {:?}", res);
+
+    Ok(())
 }

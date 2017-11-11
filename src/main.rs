@@ -26,6 +26,7 @@ mod errors {
         foreign_links {
             Io(::std::io::Error);
             Serde(::serde_yaml::Error);
+            Reqwest(::reqwest::Error);
         }
     }
 }
@@ -39,8 +40,9 @@ use cursive::Cursive;
 use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
 use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
+use errors::*;
 use indicatif::ProgressBar;
-use std::io::copy;
+use std::io::{copy, Seek, SeekFrom};
 use std::fs::File;
 use std::path::Path;
 use std::{thread, time};
@@ -92,24 +94,24 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-fn download_papers(papers: &[Paper], dir: &TempDir) -> Vec<File> {
+fn download_papers(papers: &[Paper], dir: &TempDir) -> Result<Vec<File>> {
     let mut files: Vec<File>  = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
     for i in papers {
         progressbar.inc(1);
         let sanitized_title = i.title.replace("\n", "").replace("  ", " ");
-        let mut response = reqwest::get(i.link.clone()).unwrap();
+        let mut response = reqwest::get(i.link.clone())?;
         let filename = Path::new("").with_file_name(sanitized_title).with_extension("pdf");
         let savefile = dir.path().join(filename);
 //        println!("{:?}",savefile);
         let mut file = File::create(savefile).unwrap();
-        copy(&mut response, &mut file);
+        copy(&mut response, &mut file)?;
 
         files.push(file);
     }
-    progressbar.finish();
+    progressbar.finish_and_clear();
 
-    files
+    Ok(files)
 }
 
 fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
@@ -173,8 +175,8 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
     }).unwrap()
 }
 
-fn main() {
-    let papers = parse_arxiv();
+fn run() -> Result<()> {
+    let papers = parse_arxiv().chain_err(|| "Error in parsing papers")?;
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
     //currently disabled
@@ -182,17 +184,42 @@ fn main() {
     
     let filtered_papers = build_gui(filtered_papers);
     if let Ok(dir) = TempDir::new("TheoryGrabber") {
-        let files = download_papers(&filtered_papers, &dir);
+        let files = download_papers(&filtered_papers, &dir).chain_err(|| "Files error")?;
 
-        // let ten_millis = time::Duration::from_millis(1000);
-        // thread::sleep(ten_millis);
+        let ten_millis = time::Duration::from_millis(100000);
+        thread::sleep(ten_millis);
         println!("Trying to upload first file");
 
-        let file = files.first().unwrap();
+        let mut file = files.first().chain_err(|| "Not first found")?;
         let tk = setup_oauth2();
-        upload_file(tk, file);
 
+        file.seek(SeekFrom::Start(0)).chain_err(|| "Error in seeking to start")?;
+        let fcopy = file.try_clone().chain_err(|| "Cloning is wrong?")?;
+        upload_file(&tk, fcopy).chain_err(|| "Uploading function has error")?;
     }
+    Ok(())
     
     //    println!("{:?}", filtered_papers);
+}
+
+fn main() {
+    if let Err(ref e) = run() {
+        use std::io::Write;
+        let stderr = &mut ::std::io::stderr();
+        let errmsg = "Error writing to stderr";
+
+        writeln!(stderr, "error: {}", e).expect(errmsg);
+
+        for e in e.iter().skip(1) {
+            writeln!(stderr, "caused by: {}", e).expect(errmsg);
+        }
+
+        // The backtrace is not always generated. Try to run this example
+        // with `RUST_BACKTRACE=1`.
+        if let Some(backtrace) = e.backtrace() {
+            writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
+        }
+
+        ::std::process::exit(1);
+    }
 }

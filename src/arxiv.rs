@@ -1,4 +1,5 @@
 use chrono;
+use errors::*;
 use std::io::Read;
 use reqwest;
 use std;
@@ -9,9 +10,9 @@ use url::Url;
 use types::{Paper, Source};
 
 
-static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=10";
+static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=1";
 
-pub fn parse_arxiv() -> Vec<Paper> {
+pub fn parse_arxiv() -> Result<Vec<Paper>> {
     enum Tag {
         Entry,
         Published,
@@ -31,9 +32,9 @@ pub fn parse_arxiv() -> Vec<Paper> {
 
 
     //this is super inefficient!
-    let mut reqreader = reqwest::get(ARXIV).unwrap();
+    let mut reqreader = reqwest::get(ARXIV)?;
     let mut resp = String::new();
-    reqreader.read_to_string(&mut resp);
+    reqreader.read_to_string(&mut resp)?;
 
     let mut reader = Reader::from_str(resp.as_str());
     reader.trim_text(true);
@@ -147,7 +148,7 @@ pub fn parse_arxiv() -> Vec<Paper> {
 
 
     //converting tmp to real and testing
-    entries
+    Ok(entries
         .into_iter()
         .map(|p| {
             //println!("{:?}", p);
@@ -162,5 +163,5 @@ pub fn parse_arxiv() -> Vec<Paper> {
                 authors: p.authors,
             }
         })
-        .collect::<Vec<Paper>>()
+        .collect::<Vec<Paper>>())
 }
