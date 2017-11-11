@@ -60,15 +60,15 @@ enum BasicColumn {
     Published,
 }
 
-impl BasicColumn {
-    fn as_str(&self) -> &str {
-        match *self {
-            BasicColumn::Title => "Title",
-            BasicColumn::Source => "Source",
-            BasicColumn::Published => "Published",
-        }
-    }
-}
+// impl BasicColumn {
+//     fn as_str(&self) -> &str {
+//         match *self {
+//             BasicColumn::Title => "Title",
+//             BasicColumn::Source => "Source",
+//             BasicColumn::Published => "Published",
+//         }
+//     }
+// }
 
 impl TableViewItem<BasicColumn> for Paper {
     fn to_column(&self, column: BasicColumn) -> String {
