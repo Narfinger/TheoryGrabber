@@ -33,8 +33,7 @@ pub fn print_authors(paper: &Paper) -> String {
     //if let Some(x) = paper.authors.first() {
     let mut iterator = paper.authors.iter();
     let first = iterator.next().unwrap();
-    iterator
-        .fold(first.to_string(), |acc, x| acc + " and " + x.as_str())
+    iterator.fold(first.to_string(), |acc, x| acc + " and " + x.as_str())
     //} else {
     //    "".to_string()
     //}

@@ -129,9 +129,9 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                         cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
                     }
                     Tag::Author => {
-                        cur_paper
-                            .authors
-                            .push(e.unescape_and_decode(&reader).unwrap())
+                        cur_paper.authors.push(
+                            e.unescape_and_decode(&reader).unwrap(),
+                        )
                     }
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
                     Tag::Nothing | Tag::Entry => {}  
@@ -148,20 +148,22 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
 
 
     //converting tmp to real and testing
-    Ok(entries
-        .into_iter()
-        .map(|p| {
-            //println!("{:?}", p);
-            Paper {
-                title: p.title.unwrap(),
-                description: p.summary.unwrap(),
-                published: chrono::DateTime::parse_from_rfc3339(p.published.unwrap().as_str())
-                    .unwrap()
-                    .with_timezone(&chrono::Utc),
-                link: Url::parse(p.link.unwrap().as_str()).unwrap(),
-                source: Source::Arxiv,
-                authors: p.authors,
-            }
-        })
-        .collect::<Vec<Paper>>())
+    Ok(
+        entries
+            .into_iter()
+            .map(|p| {
+                //println!("{:?}", p);
+                Paper {
+                    title: p.title.unwrap(),
+                    description: p.summary.unwrap(),
+                    published: chrono::DateTime::parse_from_rfc3339(p.published.unwrap().as_str())
+                        .unwrap()
+                        .with_timezone(&chrono::Utc),
+                    link: Url::parse(p.link.unwrap().as_str()).unwrap(),
+                    source: Source::Arxiv,
+                    authors: p.authors,
+                }
+            })
+            .collect::<Vec<Paper>>(),
+    )
 }
