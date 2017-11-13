@@ -245,6 +245,6 @@ fn main() {
             writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
         }
 
-        ::std::process::exit(1);
+//        ::std::process::exit(1);
     }
 }

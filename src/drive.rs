@@ -2,17 +2,18 @@ use errors::*;
 use hyper;
 use hyper::net::HttpsConnector;
 use hyper_rustls;
+//use hyper::mime;
 use oauth2;
 use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecret,
              DiskTokenStorage, GetToken, FlowType};
 use std::fs::File;
 use std;
 use reqwest;
+use reqwest::header::{Headers, Authorization, Bearer, ContentType};
 use reqwest::mime;
-use reqwest::header::{Headers, ContentType};
 use serde_json as json;
 
-static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3?uploadType=media?access_token=";
+static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3?uploadType=media";
 
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
@@ -44,28 +45,36 @@ pub fn setup_oauth2() -> oauth2::Token {
 }
 
 pub fn upload_file(tk: &oauth2::Token, f: File) -> Result<()> {
-    let url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
+//    let url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
 
     let client = reqwest::Client::new();
     let mut header = Headers::new();
     // let mime: mime::Mime = "application/pdf".parse().chain_err(
     //     || "Cannot convert to pdf mime type",
     // )?;
-    let mime: mime::Mime = "text/plain".parse().chain_err(|| "Cannot convert to text mime type")?;
+    let mime: mime::Mime = "text/plain".parse().unwrap();//.chain_err(|| "Cannot convert to text mime type")?;
 
     
     header.set(ContentType(mime));
+    header.set(Authorization(
+               Bearer {
+                   token: tk.access_token.to_owned()
+               }));
     //header.set_raw("content-lenth", length);
 
     println!("We got everything done expect sending");
 
 
 
-    let res = client
-        .post(url.as_str())
+    let mut query = client
+        .post(UPLOAD_URL)
         .headers(header)
         .body(f)
-        .send()
+        .build();
+
+    println!("{:?}", query);
+    let mut res =
+        client.execute(query.unwrap())
         .chain_err(|| "Error in uploading");
     println!("client result: {:?}", res);
 
