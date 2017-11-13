@@ -13,7 +13,7 @@ use reqwest::header::{Headers, Authorization, Bearer, ContentType};
 use reqwest::mime;
 use serde_json as json;
 
-static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3?uploadType=media";
+static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=media";
 
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
@@ -49,10 +49,10 @@ pub fn upload_file(tk: &oauth2::Token, f: File) -> Result<()> {
 
     let client = reqwest::Client::new();
     let mut header = Headers::new();
-    // let mime: mime::Mime = "application/pdf".parse().chain_err(
-    //     || "Cannot convert to pdf mime type",
-    // )?;
-    let mime: mime::Mime = "text/plain".parse().unwrap();//.chain_err(|| "Cannot convert to text mime type")?;
+    let mime: mime::Mime = "application/pdf".parse().chain_err(
+        || "Cannot convert to pdf mime type",
+    )?;
+    //let mime: mime::Mime = "text/plain".parse().unwrap();//.chain_err(|| "Cannot convert to text mime type")?;
 
     
     header.set(ContentType(mime));
