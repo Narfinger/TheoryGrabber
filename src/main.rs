@@ -9,7 +9,6 @@ extern crate error_chain;
 extern crate indicatif;
 extern crate reqwest;
 extern crate rss;
-#[macro_use]
 extern crate serde_json;
 extern crate serde_yaml;
 #[macro_use]
@@ -43,11 +42,11 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::io::{copy, Seek, SeekFrom};
+use std::io::{copy};
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 use std::{thread, time};
-use types::{Paper, print_authors};
+use types::{DownloadedPaper, Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
 use drive::{setup_oauth2, upload_file};
@@ -96,8 +95,8 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-fn download_papers(papers: &[Paper], dir: &TempDir) -> Result<Vec<PathBuf>> {
-    let mut files: Vec<PathBuf> = Vec::new();
+fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
+    let mut files: Vec<DownloadedPaper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
     progressbar.set_message("Downloading Papers");
     progressbar.set_style(ProgressStyle::default_bar()
@@ -116,7 +115,7 @@ fn download_papers(papers: &[Paper], dir: &TempDir) -> Result<Vec<PathBuf>> {
         let mut file = File::create(savefile.clone()).unwrap();
         copy(&mut response, &mut file)?;
         
-        files.push(savefile);
+        files.push(DownloadedPaper{ paper: i, path: savefile});
     }
     progressbar.finish();
 
@@ -217,8 +216,8 @@ fn run() -> Result<()> {
             //let mut path = files.first().chain_err(|| "Not first found")?;
             
             
-            let f = File::open(i).chain_err(|| "File couldn't be opened")?;
-            upload_file(&tk, f).chain_err(
+            let f = File::open(i.path.clone()).chain_err(|| "File couldn't be opened")?;
+            upload_file(&tk, f, i.paper).chain_err(
                 || "Uploading function has error",
             )?;
         }

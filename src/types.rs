@@ -1,5 +1,6 @@
 use chrono;
 use std::fmt;
+use std::path::PathBuf;
 use url;
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -27,6 +28,11 @@ pub struct Paper {
     pub source: Source,
     pub published: chrono::DateTime<chrono::Utc>,
     pub authors: Vec<String>,
+}
+
+pub struct DownloadedPaper<'a> {
+    pub paper: &'a Paper,
+    pub path: PathBuf,
 }
 
 pub fn print_authors(paper: &Paper) -> String {
