@@ -6,14 +6,15 @@ use hyper_rustls;
 use oauth2;
 use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecret,
              DiskTokenStorage, GetToken, FlowType};
-use std::fs::File;
 use std;
+use std::collections::HashMap;
+use std::fs::File;
 use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer, ContentType};
 use reqwest::mime;
 use serde_json as json;
 
-static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=media";
+static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
 
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
@@ -44,39 +45,33 @@ pub fn setup_oauth2() -> oauth2::Token {
     realtk.unwrap()
 }
 
-pub fn upload_file(tk: &oauth2::Token, f: File) -> Result<()> {
-//    let url = UPLOAD_URL.to_owned() + tk.access_token.as_str();
-
+pub fn upload_file(tk: &oauth2::Token, f: File, filename: String) -> Result<()> {
+    //getting the proper resumeable session URL
     let client = reqwest::Client::new();
     let mut header = Headers::new();
-    let mime: mime::Mime = "application/pdf".parse().chain_err(
-        || "Cannot convert to pdf mime type",
-    )?;
-    //let mime: mime::Mime = "text/plain".parse().unwrap();//.chain_err(|| "Cannot convert to text mime type")?;
+
+    header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
+
+    let mut metadata = HashMap::new();
+    metadata.insert("name", filename);
+    metadata.insert("mimeType", "application/pdf");    
+    let query = client.post(UPLOAD_URL).headers(header.clone()).json(&metadata).build();
 
     
-    header.set(ContentType(mime));
-    header.set(Authorization(
-               Bearer {
-                   token: tk.access_token.to_owned()
-               }));
-    //header.set_raw("content-lenth", length);
-
-    println!("We got everything done expect sending");
-
-
-
-    let mut query = client
-        .post(UPLOAD_URL)
-        .headers(header)
-        .body(f)
-        .build();
-
     println!("{:?}", query);
-    let mut res =
-        client.execute(query.unwrap())
-        .chain_err(|| "Error in uploading");
-    println!("client result: {:?}", res);
+    let mut res = client.execute(query.unwrap()).chain_err(
+        || "Error in getting resumeable url",
+    )?;
 
-    Ok(())
+    println!("{:?}", res);
+    if res.status().is_success() {
+        if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
+            let res = client.put(loc.to_string().as_str()).headers(header).body(f).send().chain_err(|| "Error in uploading file to resumeable url")?;
+            Ok(())
+        } else {
+            return Err("no location header found".into())
+        }
+    } else {
+        return Err("something went wrong with getting resumeable url".into())
+    }
 }
