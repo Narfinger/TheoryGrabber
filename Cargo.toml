@@ -1,5 +1,5 @@
 [package]
-name = "TheoryGrabber"
+name = "theory_grabber"
 version = "0.1.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 

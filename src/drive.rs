@@ -44,8 +44,8 @@ pub fn setup_oauth2() -> oauth2::Token {
     realtk.unwrap()
 }
 
-fn makeFilename(paper: &Paper) -> String {
-    "testfile".to_string()
+fn make_filename(paper: &Paper) -> String {
+    "testfile.pdf".to_string()
 }
 
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
@@ -55,7 +55,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
 
     header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
 
-    let filename = makeFilename(paper);
+    let filename = make_filename(paper);
     
     let mut metadata = HashMap::new();
     metadata.insert("name", filename);
