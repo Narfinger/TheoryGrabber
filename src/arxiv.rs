@@ -36,7 +36,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp)?;
 
-    let mut reader = Reader::from_str(resp.as_str());
+    let mut reader = Reader::from_str(&resp);
     reader.trim_text(true);
     let mut buf = Vec::new();
     let mut tag = Tag::Nothing;
@@ -156,10 +156,10 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                 Paper {
                     title: p.title.unwrap(),
                     description: p.summary.unwrap(),
-                    published: chrono::DateTime::parse_from_rfc3339(p.published.unwrap().as_str())
+                    published: chrono::DateTime::parse_from_rfc3339(&p.published.unwrap())
                         .unwrap()
                         .with_timezone(&chrono::Utc),
-                    link: Url::parse(p.link.unwrap().as_str()).unwrap(),
+                    link: Url::parse(&p.link.unwrap()).unwrap(),
                     source: Source::Arxiv,
                     authors: p.authors,
                 }

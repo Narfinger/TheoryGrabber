@@ -44,8 +44,29 @@ pub fn setup_oauth2() -> oauth2::Token {
     realtk.unwrap()
 }
 
+fn get_last_name_initials(author: &str) -> char {
+    let lastname = author.split_whitespace().nth(1).expect(
+        "No lastname found?",
+    ); //lastname
+    lastname.chars().next().unwrap()
+}
+
+fn author_string(paper: &Paper) -> String {
+    paper
+        .authors
+        .iter()
+        .fold(String::from(""), |acc, i| {
+            acc + &get_last_name_initials(i).to_string()
+        })
+        .to_uppercase()
+}
+
 fn make_filename(paper: &Paper) -> String {
-    "testfile.pdf".to_string()
+    let datestring = paper.published.format("%Y-%m-%d");
+    let mut title = paper.title.clone();
+    title.truncate(75);
+
+    datestring.to_string() + "-" + &author_string(paper) + "-" + &title
 }
 
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
@@ -56,22 +77,31 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
     header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
 
     let filename = make_filename(paper);
-    
+
     let mut metadata = HashMap::new();
     metadata.insert("name", filename);
-    metadata.insert("mimeType", "application/pdf".to_string());    
-    let query = client.post(UPLOAD_URL).headers(header.clone()).json(&metadata).build();
+    metadata.insert("mimeType", "application/pdf".to_string());
+    let query = client
+        .post(UPLOAD_URL)
+        .headers(header.clone())
+        .json(&metadata)
+        .build();
 
-    
-//    println!("{:?}", query);
+
+    //    println!("{:?}", query);
     let res = client.execute(query.unwrap()).chain_err(
         || "Error in getting resumeable url",
     )?;
 
-//    println!("{:?}", res);
+    //    println!("{:?}", res);
     if res.status().is_success() {
         if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
-            client.put(loc.to_string().as_str()).headers(header).body(f).send().chain_err(|| "Error in uploading file to resumeable url")?;
+            client
+                .put(&loc.to_string())
+                .headers(header)
+                .body(f)
+                .send()
+                .chain_err(|| "Error in uploading file to resumeable url")?;
             Ok(())
         } else {
             Err("no location header found".into())
