@@ -42,14 +42,14 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::io::{copy};
+use std::io::copy;
 use std::fs::File;
-use std::path::{Path};
+use std::path::Path;
 use std::{thread, time};
 use types::{DownloadedPaper, Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
-use drive::{setup_oauth2, upload_file};
+use drive::{create_directory, setup_oauth2, upload_file};
 
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
@@ -103,7 +103,7 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
                           .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
                           .progress_chars("#>-"));
     progressbar.enable_steady_tick(100);
-    
+
     for i in progressbar.wrap_iter(papers.iter()) {
         let sanitized_title = i.title.replace("\n", "").replace("  ", " ");
         let mut response = reqwest::get(i.link.clone())?;
@@ -114,8 +114,11 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
         //        println!("{:?}",savefile);
         let mut file = File::create(savefile.clone()).unwrap();
         copy(&mut response, &mut file)?;
-        
-        files.push(DownloadedPaper{ paper: i, path: savefile});
+
+        files.push(DownloadedPaper {
+            paper: i,
+            path: savefile,
+        });
     }
     progressbar.finish();
 
@@ -186,6 +189,12 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
 }
 
 fn run() -> Result<()> {
+    let tk = setup_oauth2();
+
+    create_directory(&tk);
+    return Ok(());
+
+
     let papers = parse_arxiv().chain_err(|| "Error in parsing papers")?;
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
@@ -207,16 +216,18 @@ fn run() -> Result<()> {
                               .progress_chars("#>-"));
         progressbar.enable_steady_tick(100);
 
-        
+
         for i in progressbar.wrap_iter(files.iter()) {
             //let ten_millis = time::Duration::from_millis(100000);
             //thread::sleep(ten_millis);
             println!("Trying to upload first file");
-            
+
             //let mut path = files.first().chain_err(|| "Not first found")?;
-            
-            
-            let f = File::open(i.path.clone()).chain_err(|| "File couldn't be opened")?;
+
+
+            let f = File::open(i.path.clone()).chain_err(
+                || "File couldn't be opened",
+            )?;
             upload_file(&tk, f, i.paper).chain_err(
                 || "Uploading function has error",
             )?;
@@ -245,6 +256,6 @@ fn main() {
             writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
         }
 
-//        ::std::process::exit(1);
+        //        ::std::process::exit(1);
     }
 }

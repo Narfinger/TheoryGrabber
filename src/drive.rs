@@ -14,6 +14,8 @@ use serde_json as json;
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
+static DIRECTORY_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files";
+static DIRECTORY_NAME: &'static str = "TheoryGrabber";
 
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
@@ -69,6 +71,47 @@ fn make_filename(paper: &Paper) -> String {
     datestring.to_string() + "-" + &author_string(paper) + "-" + &title
 }
 
+//do progress bar
+//do folder
+
+pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
+    return Err("this doesn't work yet".into());
+
+    let client = reqwest::Client::new();
+    let mut header = Headers::new();
+
+    header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
+    let mut metadata = HashMap::new();
+    metadata.insert("name", DIRECTORY_NAME);
+    metadata.insert("mimeType", "application/vnd.google-apps.folder");
+
+    let query = client
+        .post(UPLOAD_URL)
+        .headers(header.clone())
+        .json(&metadata)
+        .build();
+
+    let res = client.execute(query.unwrap()).chain_err(
+        || "Error in getting resumeable url",
+    )?;
+
+    if res.status().is_success() {
+        if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
+            let res2 = client
+                .put(&loc.to_string())
+                .headers(header)
+                .send()
+                .chain_err(|| "Error in uploading file to resumeable url")?;
+            println!("{:?}", res2);
+            Ok(())
+        } else {
+            Err("no location header found".into())
+        }
+    } else {
+        Err("something went wrong with getting resumeable url".into())
+    }
+}
+
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
     //getting the proper resumeable session URL
     let client = reqwest::Client::new();
@@ -81,12 +124,12 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
     let mut metadata = HashMap::new();
     metadata.insert("name", filename);
     metadata.insert("mimeType", "application/pdf".to_string());
+
     let query = client
         .post(UPLOAD_URL)
         .headers(header.clone())
         .json(&metadata)
         .build();
-
 
     //    println!("{:?}", query);
     let res = client.execute(query.unwrap()).chain_err(
