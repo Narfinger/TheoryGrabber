@@ -8,7 +8,6 @@ use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecr
 use std;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Read;
 use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer};
 use serde_json as json;
@@ -20,13 +19,22 @@ static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files"
 static DIRECTORY_NAME: &'static str = "TheoryGrabber";
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct FileCreateResponse {
     kind: String,
     id: String,
     name: String,
-    mimeType: String,
+    mime_type: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FileUploadJSON {
+    name: String,
+    mime_type: String,
+    parent: Vec<String>
+} 
+    
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
     let secret = json::from_reader::<File, ConsoleApplicationSecret>(f)
@@ -82,7 +90,6 @@ fn make_filename(paper: &Paper) -> String {
 }
 
 //do progress bar
-//do folder
 
 pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
     let client = reqwest::Client::new();
@@ -105,7 +112,7 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
     Ok(())
 }
 
-pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
+pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -> Result<()> {
     //getting the proper resumeable session URL
     let client = reqwest::Client::new();
     let mut header = Headers::new();
@@ -114,10 +121,12 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
 
     let filename = make_filename(paper);
 
-    let mut metadata = HashMap::new();
-    metadata.insert("name", filename);
-    metadata.insert("mimeType", "application/pdf".to_string());
-
+    let metadata = FileUploadJSON {
+        name: filename,
+        mime_type: "application/pdf".to_string(),
+        parent: vec![fileid],
+    };
+    
     let query = client
         .post(UPLOAD_URL)
         .headers(header.clone())

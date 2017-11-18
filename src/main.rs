@@ -49,6 +49,7 @@ use std::{thread, time};
 use types::{DownloadedPaper, Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
+use config::read_directory_id;
 use drive::{create_directory, setup_oauth2, upload_file};
 
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
@@ -190,13 +191,13 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
 
 fn run() -> Result<()> {
     let tk = setup_oauth2();
-
-    println!("Starting to create");
-    create_directory(&tk);
-    println!("creating done");
-    return Ok(());
-
-
+    let directory_id = if let Ok(id) = read_directory_id() {
+        id
+    } else {
+        create_directory(&tk)?;
+        read_directory_id()?
+    };
+    
     let papers = parse_arxiv().chain_err(|| "Error in parsing papers")?;
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
@@ -230,7 +231,7 @@ fn run() -> Result<()> {
             let f = File::open(i.path.clone()).chain_err(
                 || "File couldn't be opened",
             )?;
-            upload_file(&tk, f, i.paper).chain_err(
+            upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
                 || "Uploading function has error",
             )?;
         }

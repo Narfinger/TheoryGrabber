@@ -2,3 +2,4 @@
 **/*.rs.bk
 client_secret.json
 /tk
+/config.yaml
