@@ -47,9 +47,6 @@ use std::fs::File;
 use std::path::Path;
 use types::{DownloadedPaper, Paper, print_authors};
 use tempdir::TempDir;
-use arxiv::parse_arxiv;
-use config::read_directory_id;
-use drive::{create_directory, setup_oauth2, upload_file};
 
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
@@ -189,15 +186,15 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
 }
 
 fn run() -> Result<()> {
-    let tk = setup_oauth2();
-    let directory_id = if let Ok(id) = read_directory_id() {
+    let tk = drive::setup_oauth2();
+    let directory_id = if let Ok(id) = config::read_directory_id() {
         id
     } else {
-        create_directory(&tk)?;
-        read_directory_id()?
+        drive::create_directory(&tk)?;
+        config::read_directory_id()?
     };
     
-    let papers = parse_arxiv().chain_err(|| "Error in parsing papers")?;
+    let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing papers")?;
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
     //currently disabled
@@ -209,8 +206,6 @@ fn run() -> Result<()> {
             || "Files error",
         )?;
 
-
-        let tk = setup_oauth2();
         let progressbar = ProgressBar::new(filtered_papers.len() as u64);
         progressbar.set_message("Uploading Papers");
         progressbar.set_style(ProgressStyle::default_bar()
@@ -229,11 +224,12 @@ fn run() -> Result<()> {
             let f = File::open(i.path.clone()).chain_err(
                 || "File couldn't be opened",
             )?;
-            upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
+            drive::upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
                 || "Uploading function has error",
             )?;
         }
         progressbar.finish();
+        config::write_now()?;
     }
     Ok(())
     //    println!("{:?}", filtered_papers);
