@@ -45,7 +45,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::io::copy;
 use std::fs::File;
 use std::path::Path;
-use std::{thread, time};
 use types::{DownloadedPaper, Paper, print_authors};
 use tempdir::TempDir;
 use arxiv::parse_arxiv;
@@ -218,7 +217,6 @@ fn run() -> Result<()> {
                               .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
                               .progress_chars("#>-"));
         progressbar.enable_steady_tick(100);
-
 
         for i in progressbar.wrap_iter(files.iter()) {
             //let ten_millis = time::Duration::from_millis(100000);

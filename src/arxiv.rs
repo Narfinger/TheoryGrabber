@@ -9,8 +9,7 @@ use quick_xml::events::Event;
 use url::Url;
 use types::{Paper, Source};
 
-
-static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=1";
+static ARXIV: &'static str = "http://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
 
 pub fn parse_arxiv() -> Result<Vec<Paper>> {
     enum Tag {

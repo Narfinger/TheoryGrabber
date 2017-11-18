@@ -32,7 +32,7 @@ struct FileCreateResponse {
 struct FileUploadJSON {
     name: String,
     mime_type: String,
-    parent: Vec<String>
+    parents: Vec<String>
 } 
     
 pub fn setup_oauth2() -> oauth2::Token {
@@ -124,7 +124,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -
     let metadata = FileUploadJSON {
         name: filename,
         mime_type: "application/pdf".to_string(),
-        parent: vec![fileid],
+        parents: vec![fileid],
     };
     
     let query = client
