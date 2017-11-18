@@ -191,7 +191,9 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
 fn run() -> Result<()> {
     let tk = setup_oauth2();
 
+    println!("Starting to create");
     create_directory(&tk);
+    println!("creating done");
     return Ok(());
 
 

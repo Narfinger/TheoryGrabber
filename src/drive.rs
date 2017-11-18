@@ -8,14 +8,24 @@ use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecr
 use std;
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Read;
 use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer};
 use serde_json as json;
+use config::write_directory_id;
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
-static DIRECTORY_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files";
+static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";
 static DIRECTORY_NAME: &'static str = "TheoryGrabber";
+
+#[derive(Serialize, Deserialize)]
+struct FileCreateResponse {
+    kind: String,
+    id: String,
+    name: String,
+    mimeType: String,
+}
 
 pub fn setup_oauth2() -> oauth2::Token {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
@@ -75,8 +85,6 @@ fn make_filename(paper: &Paper) -> String {
 //do folder
 
 pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
-    return Err("this doesn't work yet".into());
-
     let client = reqwest::Client::new();
     let mut header = Headers::new();
 
@@ -85,31 +93,16 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
     metadata.insert("name", DIRECTORY_NAME);
     metadata.insert("mimeType", "application/vnd.google-apps.folder");
 
-    let query = client
-        .post(UPLOAD_URL)
+    let mut res = client
+        .post(DIRECTORY_URL)
         .headers(header.clone())
         .json(&metadata)
-        .build();
+        .send().chain_err(|| "Error in sending to create directory")?;
+    
+    let response: FileCreateResponse = res.json().chain_err(|| "Error in decoding Response")?;
+    write_directory_id(response.id)?;
 
-    let res = client.execute(query.unwrap()).chain_err(
-        || "Error in getting resumeable url",
-    )?;
-
-    if res.status().is_success() {
-        if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
-            let res2 = client
-                .put(&loc.to_string())
-                .headers(header)
-                .send()
-                .chain_err(|| "Error in uploading file to resumeable url")?;
-            println!("{:?}", res2);
-            Ok(())
-        } else {
-            Err("no location header found".into())
-        }
-    } else {
-        Err("something went wrong with getting resumeable url".into())
-    }
+    Ok(())
 }
 
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper) -> Result<()> {
