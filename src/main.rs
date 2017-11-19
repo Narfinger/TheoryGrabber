@@ -34,63 +34,19 @@ mod errors {
 pub mod arxiv;
 pub mod config;
 pub mod drive;
+pub mod gui;
 pub mod types;
 
-use cursive::Cursive;
-use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
-use cursive_table_view::{TableView, TableViewItem};
-use cursive::traits::*;
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::copy;
 use std::fs::File;
 use std::path::Path;
-use types::{DownloadedPaper, Paper, print_authors};
+use types::{DownloadedPaper, Paper};
 use tempdir::TempDir;
 
+
 static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-enum BasicColumn {
-    Title,
-    Source,
-    Published,
-}
-
-// impl BasicColumn {
-//     fn as_str(&self) -> &str {
-//         match *self {
-//             BasicColumn::Title => "Title",
-//             BasicColumn::Source => "Source",
-//             BasicColumn::Published => "Published",
-//         }
-//     }
-// }
-
-impl TableViewItem<BasicColumn> for Paper {
-    fn to_column(&self, column: BasicColumn) -> String {
-        match column {
-            BasicColumn::Title => {
-                let mut res = self.title.replace("\n", "").to_owned();
-                res.truncate(120);
-                res
-            }
-            BasicColumn::Source => format!("{}", self.source),
-            BasicColumn::Published => format!("{}", self.published),
-        }
-    }
-
-    fn cmp(&self, other: &Self, column: BasicColumn) -> std::cmp::Ordering
-    where
-        Self: Sized,
-    {
-        match column {
-            BasicColumn::Title => self.title.cmp(&other.title),
-            BasicColumn::Source => self.source.cmp(&other.source),
-            BasicColumn::Published => self.published.cmp(&other.published),
-        }
-    }
-}
 
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
     let mut files: Vec<DownloadedPaper> = Vec::new();
@@ -122,68 +78,6 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     Ok(files)
 }
 
-fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
-    let mut siv = Cursive::new();
-    let mut table = TableView::<Paper, BasicColumn>::new()
-        .column(BasicColumn::Title, "Title", |c| {
-            c.ordering(std::cmp::Ordering::Greater).width_percent(75)
-        })
-        .column(BasicColumn::Source, "Source", |c| {
-            c.ordering(std::cmp::Ordering::Greater)
-        })
-        .column(BasicColumn::Published, "Published", |c| {
-            c.ordering(std::cmp::Ordering::Greater)
-        }).default_column(BasicColumn::Published);
-
-    table.set_items(papers);
-    table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
-        
-        let value: Paper =
-            siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
-                table.borrow_item(index).unwrap().clone()
-            }).unwrap();
-
-        let d = LinearLayout::vertical()
-            .child(TextView::new(value.title.clone()))
-            .child(DummyView)
-            .child(TextView::new(print_authors(&value)))
-            .child(DummyView)
-            .child(TextView::new(value.link.clone().to_string()))
-            .child(DummyView)
-            .child(TextView::new(value.description.clone()));
-
-        siv.add_layer(
-            Dialog::around(d)
-                .title(format!("Removing row # {}", row))
-                .button("Delete", move |s| {
-                    s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
-                        table.remove_item(index);
-                    });
-                    s.pop_layer()
-                })
-                .button("Close", move |s| s.pop_layer()),
-        );
-    });
-
-    siv.add_layer(
-        Dialog::around(table.with_id("table").min_size((500, 80)))
-            .title("Table View")
-            .button("Download all", move |s| s.quit())
-            .button("Quit", move |s| {
-                s.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
-                    table.clear();
-                });
-                s.quit();
-            }),
-    );
-
-    //pb.finish_and_clear();
-    
-    siv.run();
-    siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
-        table.take_items()
-    }).unwrap()
-}
 
 fn run() -> Result<()> {
     let tk = drive::setup_oauth2();
@@ -203,18 +97,18 @@ fn run() -> Result<()> {
         return Ok(())
     }
     
-    let filtered_papers = build_gui(filtered_papers);
-    if filtered_papers.is_empty() {
+    let papers_to_download = gui::get_selected_papers(filtered_papers);
+    if papers_to_download.is_empty() {
         println!("Nothing to download.");
         return Ok(())
     }
     
     if let Ok(dir) = TempDir::new("TheoryGrabber") {
-        let files = download_papers(&filtered_papers, &dir).chain_err(
+        let files = download_papers(&papers_to_download, &dir).chain_err(
             || "Files error",
         )?;
 
-        let progressbar = ProgressBar::new(filtered_papers.len() as u64);
+        let progressbar = ProgressBar::new(files.len() as u64);
         progressbar.set_message("Uploading Papers");
         progressbar.set_style(ProgressStyle::default_bar()
                               .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
@@ -240,7 +134,6 @@ fn run() -> Result<()> {
         config::write_now()?;
     }
     Ok(())
-    //    println!("{:?}", filtered_papers);
 }
 
 fn main() {
@@ -260,7 +153,5 @@ fn main() {
         if let Some(backtrace) = e.backtrace() {
             writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
         }
-
-        //        ::std::process::exit(1);
     }
 }
