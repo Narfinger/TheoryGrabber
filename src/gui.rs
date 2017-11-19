@@ -1,3 +1,4 @@
+use cursive;
 use cursive::Cursive;
 use cursive::views::{Dialog, LinearLayout, TextView, DummyView};
 use cursive_table_view::{TableView, TableViewItem};
@@ -70,7 +71,16 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Vec<Paper> {
 
         siv.add_layer(
             Dialog::around(d)
-                .title(format!("Removing row # {}", row))
+                .title(format!("Details row # {}", row))
+                .button("Next", move |s| {
+                    //this is kind of hacky
+                    s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+                        //this is technically not correct as index+1 is in the unsorted view, while we look in the sorted one
+                        table.set_selected_row(index+1);
+                    });
+                    s.pop_layer();
+                    //s.on_event(cursive::event::Event::Key(cursive::event::Key::Enter));
+                })
                 .button("Delete", move |s| {
                     s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
                         table.remove_item(index);

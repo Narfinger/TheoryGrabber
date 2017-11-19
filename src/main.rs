@@ -80,6 +80,10 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
 
 
 fn run() -> Result<()> {
+    println!("Ideas for improvement:");
+    println!("sub implement dialog for deleting to support delete key and stuff");
+    println!("refactor the small functions into separate functions.");
+
     let tk = drive::setup_oauth2();
     let directory_id = if let Ok(id) = config::read_directory_id() {
         id
