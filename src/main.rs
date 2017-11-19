@@ -200,7 +200,17 @@ fn run() -> Result<()> {
     //currently disabled
     //config::write_now();
 
+    if filtered_papers.len() == 0 {
+        println!("Nothing new found.");
+        return Ok(())
+    }
+    
     let filtered_papers = build_gui(filtered_papers);
+    if filtered_papers.len() == 0 {
+        println!("Nothing to download.");
+        return Ok(())
+    }
+    
     if let Ok(dir) = TempDir::new("TheoryGrabber") {
         let files = download_papers(&filtered_papers, &dir).chain_err(
             || "Files error",
