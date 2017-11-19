@@ -1,4 +1,5 @@
 use chrono;
+use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
 use url;
@@ -20,7 +21,7 @@ impl fmt::Display for Source {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Paper {
     pub title: String,
     pub description: String,
@@ -28,6 +29,18 @@ pub struct Paper {
     pub source: Source,
     pub published: chrono::DateTime<chrono::Utc>,
     pub authors: Vec<String>,
+}
+
+impl Ord for Paper {
+    fn cmp(&self, other: &Paper) -> Ordering {
+        self.published.cmp(&other.published)
+    }
+}
+
+impl PartialOrd for Paper {
+    fn partial_cmp(&self, other: &Paper) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 pub struct DownloadedPaper<'a> {

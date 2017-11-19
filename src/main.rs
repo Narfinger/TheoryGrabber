@@ -133,11 +133,11 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
         })
         .column(BasicColumn::Published, "Published", |c| {
             c.ordering(std::cmp::Ordering::Greater)
-        });
+        }).default_column(BasicColumn::Published);
 
     table.set_items(papers);
     table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {
-
+        
         let value: Paper =
             siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
                 table.borrow_item(index).unwrap().clone()
@@ -178,7 +178,7 @@ fn build_gui(papers: Vec<Paper>) -> Vec<Paper> {
     );
 
     //pb.finish_and_clear();
-
+    
     siv.run();
     siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
         table.take_items()
@@ -197,8 +197,6 @@ fn run() -> Result<()> {
     let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing papers")?;
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
-    //currently disabled
-    //config::write_now();
 
     if filtered_papers.len() == 0 {
         println!("Nothing new found.");
