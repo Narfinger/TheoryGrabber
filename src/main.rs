@@ -198,13 +198,13 @@ fn run() -> Result<()> {
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
 
-    if filtered_papers.len() == 0 {
+    if filtered_papers.is_empty() {
         println!("Nothing new found.");
         return Ok(())
     }
     
     let filtered_papers = build_gui(filtered_papers);
-    if filtered_papers.len() == 0 {
+    if filtered_papers.is_empty() {
         println!("Nothing to download.");
         return Ok(())
     }
