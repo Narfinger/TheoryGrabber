@@ -35,6 +35,7 @@ pub mod arxiv;
 pub mod config;
 pub mod drive;
 pub mod gui;
+pub mod paper_dialog;
 pub mod types;
 
 use errors::*;

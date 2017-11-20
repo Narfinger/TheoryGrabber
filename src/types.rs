@@ -65,3 +65,10 @@ pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> 
         .filter(|p| p.published > date)
         .collect::<Vec<Paper>>()
 }
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub enum BasicColumn {
+    Title,
+    Source,
+    Published,
+}
