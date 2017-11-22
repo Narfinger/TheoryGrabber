@@ -76,7 +76,7 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
     siv.add_layer(
         Dialog::around(table.with_id("table").min_size((500, 80)))
             .title("Table View")
-            .button("Download all", button_download_all)
+            .button("Download all and save", button_download_all)
             .button("Quit", button_quit)
     );
 

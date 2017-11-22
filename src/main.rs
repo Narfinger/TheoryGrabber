@@ -83,7 +83,8 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
 fn run() -> Result<()> {
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
-
+    println!("better error handling for resumeable downloads");
+    
     let tk = drive::setup_oauth2();
     let directory_id = if let Ok(id) = config::read_directory_id() {
         id
@@ -104,7 +105,7 @@ fn run() -> Result<()> {
     if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
         if papers_to_download.is_empty() {
             println!("No papers to download");
-            return Ok(())
+            return config::write_now()
         }
 
         
