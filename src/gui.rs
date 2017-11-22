@@ -4,8 +4,12 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 //use errors::*;
 use std;
+use std::sync::atomic::{AtomicBool, ATOMIC_BOOL_INIT, Ordering};
 use paper_dialog;
 use types::{BasicColumn, Paper};
+
+static SHOULD_WE_SAVE: AtomicBool = ATOMIC_BOOL_INIT;
+
 
 impl TableViewItem<BasicColumn> for Paper {
     fn to_column(&self, column: BasicColumn) -> String {
@@ -32,7 +36,28 @@ impl TableViewItem<BasicColumn> for Paper {
     }
 }
 
-pub fn get_selected_papers(papers: Vec<Paper>) -> Vec<Paper> {
+fn table_on_submit(siv: &mut Cursive, row: usize, index: usize) {
+    let value: Paper =
+        siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+            table.borrow_item(index).unwrap().clone()
+        }).unwrap();
+    siv.add_layer(paper_dialog::new(&value, row, index));
+}
+
+fn button_quit(siv: &mut Cursive) {
+    siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+        table.clear();
+    });
+    siv.quit();
+}
+
+fn button_download_all(siv: &mut Cursive) {
+    SHOULD_WE_SAVE.store(true, Ordering::Relaxed); //I have no idea if this is the correct ordering
+    siv.quit();
+}
+
+/// return None if we do not want to save the date
+pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
         .column(BasicColumn::Title, "Title", |c| {
@@ -46,30 +71,27 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Vec<Paper> {
         }).default_column(BasicColumn::Published);
 
     table.set_items(papers);
-    table.set_on_submit(|siv: &mut Cursive, row: usize, index: usize| {        
-        let value: Paper =
-            siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
-                table.borrow_item(index).unwrap().clone()
-            }).unwrap();
-        siv.add_layer(paper_dialog::new(&value, row, index));
-    });
+    table.set_on_submit(table_on_submit);
 
     siv.add_layer(
         Dialog::around(table.with_id("table").min_size((500, 80)))
             .title("Table View")
-            .button("Download all", move |s| s.quit())
-            .button("Quit", move |s| {
-                s.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
-                    table.clear();
-                });
-                s.quit();
-            }),
+            .button("Download all", button_download_all)
+            .button("Quit", button_quit)
     );
 
     //pb.finish_and_clear();
     
     siv.run();
-    siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+
+    //returning elements that are left in the table
+    let val = siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
         table.take_items()
-    }).unwrap()
+    }).unwrap();
+
+    if SHOULD_WE_SAVE.load(Ordering::Relaxed) {
+        Some(val)
+    } else {
+        None
+    }
 }

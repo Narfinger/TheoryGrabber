@@ -102,41 +102,45 @@ fn run() -> Result<()> {
         return Ok(())
     }
     
-    let papers_to_download = gui::get_selected_papers(filtered_papers);
-    if papers_to_download.is_empty() {
-        println!("Nothing to download.");
-        return Ok(())
-    }
-    
-    if let Ok(dir) = TempDir::new("TheoryGrabber") {
-        let files = download_papers(&papers_to_download, &dir).chain_err(
-            || "Files error",
-        )?;
-
-        let progressbar = ProgressBar::new(files.len() as u64);
-        progressbar.set_message("Uploading Papers");
-        progressbar.set_style(ProgressStyle::default_bar()
-                              .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
-                              .progress_chars("#>-"));
-        progressbar.enable_steady_tick(100);
-
-        for i in progressbar.wrap_iter(files.iter()) {
-            //let ten_millis = time::Duration::from_millis(100000);
-            //thread::sleep(ten_millis);
-            println!("Trying to upload first file");
-
-            //let mut path = files.first().chain_err(|| "Not first found")?;
-
-
-            let f = File::open(i.path.clone()).chain_err(
-                || "File couldn't be opened",
-            )?;
-            drive::upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
-                || "Uploading function has error",
-            )?;
+    if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
+        if papers_to_download.is_empty() {
+            println!("No papers to download");
+            return Ok(())
         }
-        progressbar.finish();
-        config::write_now()?;
+
+        
+        if let Ok(dir) = TempDir::new("TheoryGrabber") {
+            let files = download_papers(&papers_to_download, &dir).chain_err(
+                || "Files error",
+            )?;
+            
+            let progressbar = ProgressBar::new(files.len() as u64);
+            progressbar.set_message("Uploading Papers");
+            progressbar.set_style(ProgressStyle::default_bar()
+                                  .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
+                                  .progress_chars("#>-"));
+            progressbar.enable_steady_tick(100);
+
+            for i in progressbar.wrap_iter(files.iter()) {
+                //let ten_millis = time::Duration::from_millis(100000);
+                //thread::sleep(ten_millis);
+                println!("Trying to upload first file");
+
+                //let mut path = files.first().chain_err(|| "Not first found")?;
+
+
+                let f = File::open(i.path.clone()).chain_err(
+                    || "File couldn't be opened",
+                )?;
+                drive::upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
+                    || "Uploading function has error",
+                )?;
+            }
+            progressbar.finish();
+            config::write_now()?;
+        }
+    } else {
+        println!("Nothing to download and we are not saving.");
     }
     Ok(())
 }
