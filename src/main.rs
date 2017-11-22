@@ -83,7 +83,6 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
 fn run() -> Result<()> {
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
-    println!("refactor the small functions into separate functions.");
 
     let tk = drive::setup_oauth2();
     let directory_id = if let Ok(id) = config::read_directory_id() {
@@ -122,13 +121,6 @@ fn run() -> Result<()> {
             progressbar.enable_steady_tick(100);
 
             for i in progressbar.wrap_iter(files.iter()) {
-                //let ten_millis = time::Duration::from_millis(100000);
-                //thread::sleep(ten_millis);
-                println!("Trying to upload first file");
-
-                //let mut path = files.first().chain_err(|| "Not first found")?;
-
-
                 let f = File::open(i.path.clone()).chain_err(
                     || "File couldn't be opened",
                 )?;
