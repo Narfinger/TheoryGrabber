@@ -98,8 +98,8 @@ fn run() -> Result<()> {
     let filtered_papers = types::filter_papers(papers, utc);
 
     if filtered_papers.is_empty() {
-        println!("Nothing new found.");
-        return Ok(())
+        println!("Nothing new found. Saving new date.");
+        return config::write_now()
     }
     
     if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
