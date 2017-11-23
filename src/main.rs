@@ -87,15 +87,16 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     progress_fetch_bar.set_style(ProgressStyle::default_bar()
                           .template("[{elapsed_precise}] {msg} {spinner:.green}"));
     progress_fetch_bar.enable_steady_tick(100);
-    let mut papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;
-
+    let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;
+    let mut papers_filtered = types::filter_papers(papers, utc);
+    
     progress_fetch_bar.set_message("Getting ECCC");
     let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
 
-    papers.append(&mut eccc_papers);
+    papers_filtered.append(&mut eccc_papers);
     progress_fetch_bar.finish_with_message("Done fetching");
     
-    Ok(types::filter_papers(papers, utc))
+    Ok(papers_filtered)
 }
 
 
