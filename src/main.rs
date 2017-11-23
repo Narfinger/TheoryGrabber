@@ -34,6 +34,7 @@ mod errors {
 pub mod arxiv;
 pub mod config;
 pub mod drive;
+pub mod eccc;
 pub mod gui;
 pub mod paper_dialog;
 pub mod types;
@@ -79,6 +80,23 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     Ok(files)
 }
 
+fn get_and_filter_papers() -> Result<Vec<Paper>> {
+    let progress_fetch_bar = ProgressBar::new_spinner();
+    progress_fetch_bar.set_message("Getting Arxiv");
+    progress_fetch_bar.set_style(ProgressStyle::default_bar()
+                          .template("[{elapsed_precise}] {msg} {spinner:.green}"));
+    progress_fetch_bar.enable_steady_tick(100);
+    let mut papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;
+    progress_fetch_bar.set_message("Getting ECCC");
+    let mut eccc_papers = eccc::parse_eccc().chain_err(|| "Error in parsing eccc")?;
+    papers.append(&mut eccc_papers);
+    progress_fetch_bar.finish_with_message("Done fetching");
+    
+    let utc = config::read_config_time_or_default();
+
+    Ok(types::filter_papers(papers, utc))
+}
+
 
 fn run() -> Result<()> {
     println!("Ideas for improvement:");
@@ -93,18 +111,7 @@ fn run() -> Result<()> {
         config::read_directory_id()?
     };
 
-    let progress_fetch_bar = ProgressBar::new_spinner();
-    progress_fetch_bar.set_message("Getting Arxiv");
-    progress_fetch_bar.set_style(ProgressStyle::default_bar()
-                          .template("[{elapsed_precise}] {msg} {spinner:.green}"));
-    progress_fetch_bar.enable_steady_tick(100);
-    let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing papers")?;
-    progress_fetch_bar.set_message("Getting ECCC");
-    progress_fetch_bar.finish_with_message("Done fetching");
-    
-    
-    let utc = config::read_config_time_or_default();
-    let filtered_papers = types::filter_papers(papers, utc);
+    let filtered_papers = get_and_filter_papers()?;
 
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
