@@ -13,6 +13,7 @@ hyper-rustls = "0.6.1"             # Rustls+hyper integration for pure rust HTTP
 indicatif = "0.8"    # A progress bar and cli reporting library for Rust
 reqwest = "0.8"             # higher level HTTP client library
 rss = {version = "1.1", features = ["from_url"]}                # Library for serializing the RSS web content syndication format
+select = "0.4.2"                         # A library to extract useful data from HTML documents, suitable for web scraping.
 serde = "1.0"                      # A generic serialization/deserialization framework
 serde_json = "1.0"
 serde_derive = "1.0"               # Macros 1.1 implementation of #[derive(Serialize, Deserialize)]

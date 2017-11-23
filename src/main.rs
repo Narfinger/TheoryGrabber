@@ -9,6 +9,7 @@ extern crate error_chain;
 extern crate indicatif;
 extern crate reqwest;
 extern crate rss;
+extern crate select;
 extern crate serde_json;
 extern crate serde_yaml;
 #[macro_use]
@@ -46,9 +47,6 @@ use std::fs::File;
 use std::path::Path;
 use types::{DownloadedPaper, Paper};
 use tempdir::TempDir;
-
-
-static ECCC: &'static str = "http://eccc.hpi-web.de/feeds/reports/";
 
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
     let mut files: Vec<DownloadedPaper> = Vec::new();
@@ -99,6 +97,10 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
 
 
 fn run() -> Result<()> {
+    let papers = eccc::parse_eccc();
+    println!("{:?}", papers);
+    return Ok(());
+
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
