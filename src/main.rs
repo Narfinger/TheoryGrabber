@@ -40,6 +40,7 @@ pub mod gui;
 pub mod paper_dialog;
 pub mod types;
 
+use chrono::TimeZone;
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::copy;
@@ -79,25 +80,27 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
 }
 
 fn get_and_filter_papers() -> Result<Vec<Paper>> {
+    let utc = config::read_config_time_or_default();
+
     let progress_fetch_bar = ProgressBar::new_spinner();
     progress_fetch_bar.set_message("Getting Arxiv");
     progress_fetch_bar.set_style(ProgressStyle::default_bar()
                           .template("[{elapsed_precise}] {msg} {spinner:.green}"));
     progress_fetch_bar.enable_steady_tick(100);
     let mut papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;
+
     progress_fetch_bar.set_message("Getting ECCC");
-    let mut eccc_papers = eccc::parse_eccc().chain_err(|| "Error in parsing eccc")?;
+    let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
+
     papers.append(&mut eccc_papers);
     progress_fetch_bar.finish_with_message("Done fetching");
     
-    let utc = config::read_config_time_or_default();
-
     Ok(types::filter_papers(papers, utc))
 }
 
 
 fn run() -> Result<()> {
-    let papers = eccc::parse_eccc();
+    let papers = eccc::parse_eccc(chrono::Utc.ymd(1985, 1, 1).and_hms(0, 0, 1));
     println!("{:?}", papers);
     return Ok(());
 

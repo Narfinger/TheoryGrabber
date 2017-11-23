@@ -1,4 +1,4 @@
-use chrono::{Datelike, Utc};
+use chrono::{Datelike, DateTime, Utc};
 use errors::*;
 use std::io::Read;
 use reqwest;
@@ -13,7 +13,9 @@ fn get_url() -> String {
     ECCC.to_string() + &Utc::now().year().to_string() + "/"
 }
 
-pub fn parse_eccc() -> Result<Vec<Paper>> {
+
+/// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
+pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let mut res = reqwest::get(get_url().as_str()).chain_err(|| "Can't get eccc")?;
     if !res.status().is_success() {
         return Err("Some error in getting the reqwuest".into());
@@ -32,10 +34,10 @@ pub fn parse_eccc() -> Result<Vec<Paper>> {
 
     for div in divs {
         let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
-        let link_raw = div.find(Name("a")).nth(0).unwrap().text();
+        let link_raw = div.find(Name("a")).nth(0).unwrap().attr("href").unwrap();
         let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
         let abs_raw = div.find(And(Name("div"), Attr("style", "text-align:justify;"))).nth(0).unwrap().text();
-        let authors_raw = div.text();
+        let authors_raw = "";//div.text();
 
         let id_and_date = id_and_date_raw.trim();
         let link = link_raw.trim();
@@ -43,6 +45,8 @@ pub fn parse_eccc() -> Result<Vec<Paper>> {
         let abs = abs_raw.trim();
         let authors = authors_raw.trim();
 
+
+        //we need to get the full abstract from the details page
         
         println!("Parsed: idd{:?}, link{:?}, title{:?}, abs{:?} authors{:?}", id_and_date, link, title, abs, authors);
     } 
