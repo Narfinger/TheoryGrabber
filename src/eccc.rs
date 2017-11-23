@@ -24,16 +24,19 @@ fn extract_authors(authors_raw: String) -> Vec<String> {
     authors
 }
 
-fn extract_id_date(id_date_raw: String) -> (String, String) {
-    let whitespace = id_date_raw.split_whitespace();//.collect::<String>();
-    let (id, datestring) = whitespace.split(2).collect::<(String, String)>();
+fn extract_id_rough_date(id_date_raw: String) -> (String, String) {
+    let mut id_vec = id_date_raw.split_whitespace().map(String::from).collect::<Vec<String>>();
+    let date_vec = id_vec.split_off(2);
+
+    let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
+    let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
     
     //let id = whitespace.take(2).collect::<String>();
     //let datestring = whitespace.skip(2).collect::<String>();
-    println!("{}", datestring);
+    println!("{:?}", date_string);
     
     //Date::parse_from_str(, "")
-    println!("{}", id);
+    println!("{:?}", id_string);
     return ("".to_string(), "".to_string());
 }
 
@@ -61,7 +64,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
 //        let abs_raw = div.find(And(Name("div"), Attr("style", "text-align:justify;"))).nth(0).unwrap().text();
         let authors_raw = div.children().nth(1).unwrap().text();
 
-        let (id, date) = extract_id_date(id_and_date_raw);
+        let (id, date) = extract_id_rough_date(id_and_date_raw);
         let link = link_raw.trim();
         let title = title_raw.trim();
 //        let abs = abs_raw.trim();
