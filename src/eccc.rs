@@ -26,9 +26,26 @@ pub fn parse_eccc() -> Result<Vec<Paper>> {
     
     let parsedoc = Document::from(res_string.as_str());
     //println!("res_string: {}", res_string);
-    let mut divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
+    let mut divs = parsedoc.find(And(Name("div"),Attr("id", "box"))).take(1);
     
-    println!("{:?}", divs.nth(0).unwrap());
+    //println!("{:?}", divs.nth(0).unwrap());
+
+    for div in divs {
+        let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
+        let link_raw = div.find(Name("a")).nth(0).unwrap().text();
+        let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
+        let abs_raw = div.find(And(Name("div"), Attr("style", "text-align:justify;"))).nth(0).unwrap().text();
+        let authors_raw = div.text();
+
+        let id_and_date = id_and_date_raw.trim();
+        let link = link_raw.trim();
+        let title = title_raw.trim();
+        let abs = abs_raw.trim();
+        let authors = authors_raw.trim();
+
+        
+        println!("Parsed: idd{:?}, link{:?}, title{:?}, abs{:?} authors{:?}", id_and_date, link, title, abs, authors);
+    } 
     
     
     
