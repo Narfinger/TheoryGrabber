@@ -24,6 +24,19 @@ fn extract_authors(authors_raw: String) -> Vec<String> {
     authors
 }
 
+fn extract_id_date(id_date_raw: String) -> (String, String) {
+    let whitespace = id_date_raw.split_whitespace();//.collect::<String>();
+    let (id, datestring) = whitespace.split(2).collect::<(String, String)>();
+    
+    //let id = whitespace.take(2).collect::<String>();
+    //let datestring = whitespace.skip(2).collect::<String>();
+    println!("{}", datestring);
+    
+    //Date::parse_from_str(, "")
+    println!("{}", id);
+    return ("".to_string(), "".to_string());
+}
+
 /// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
 pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let mut res = reqwest::get(get_url().as_str()).chain_err(|| "Can't get eccc")?;
@@ -48,7 +61,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
 //        let abs_raw = div.find(And(Name("div"), Attr("style", "text-align:justify;"))).nth(0).unwrap().text();
         let authors_raw = div.children().nth(1).unwrap().text();
 
-        let id_and_date = id_and_date_raw.trim();
+        let (id, date) = extract_id_date(id_and_date_raw);
         let link = link_raw.trim();
         let title = title_raw.trim();
 //        let abs = abs_raw.trim();
@@ -57,7 +70,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
 
         //we need to get the full abstract from the details page
         //println!("authors: {}", authors);
-        println!("Parsed: idd{:?}, link{:?}, title{:?}, authors{:?}", id_and_date, link, title, authors);
+        println!("Parsed: idd{:?}, link{:?}, title{:?}, authors{:?}", date, link, title, authors);
     } 
     
     
