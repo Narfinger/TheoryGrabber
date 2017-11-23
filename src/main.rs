@@ -93,14 +93,14 @@ fn run() -> Result<()> {
         config::read_directory_id()?
     };
 
-    let progress_fetch_bar = ProgressBar::new(1);
+    let progress_fetch_bar = ProgressBar::new_spinner();
     progress_fetch_bar.set_message("Getting Arxiv");
     progress_fetch_bar.set_style(ProgressStyle::default_bar()
-                          .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
-                          .progress_chars("#>-"));
+                          .template("[{elapsed_precise}] {msg} {spinner:.green}"));
     progress_fetch_bar.enable_steady_tick(100);
     let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing papers")?;
-    progress_fetch_bar.finish();
+    progress_fetch_bar.set_message("Getting ECCC");
+    progress_fetch_bar.finish_with_message("Done fetching");
     
     
     let utc = config::read_config_time_or_default();
