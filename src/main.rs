@@ -92,8 +92,17 @@ fn run() -> Result<()> {
         drive::create_directory(&tk)?;
         config::read_directory_id()?
     };
-    
+
+    let progress_fetch_bar = ProgressBar::new(1);
+    progress_fetch_bar.set_message("Getting Arxiv");
+    progress_fetch_bar.set_style(ProgressStyle::default_bar()
+                          .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
+                          .progress_chars("#>-"));
+    progress_fetch_bar.enable_steady_tick(100);
     let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing papers")?;
+    progress_fetch_bar.finish();
+    
+    
     let utc = config::read_config_time_or_default();
     let filtered_papers = types::filter_papers(papers, utc);
 
