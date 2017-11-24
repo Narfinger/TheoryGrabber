@@ -39,25 +39,26 @@ named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
 
 
 fn parse_rough_date(t: &str) -> Option<NaiveDate> {
-    eccc_rough_date(t.as_bytes()).to_result().ok()
+    let st = t.trim();
+    eccc_rough_date(st.as_bytes()).to_result().ok()
 }
 
 #[test]
 fn date_parse_test() {
     //yes I am testing every month
-    assert_eq!(parse_rough_date ("16th November 2017"), Some(NaiveDate::from_ymd(2017,11,16)));
-    assert_eq!(parse_rough_date ("3rd November 2017"), Some(NaiveDate::from_ymd(2017,11,3)));
-    assert_eq!(parse_rough_date ("2nd November 2017"), Some(NaiveDate::from_ymd(2017,11,2)));
-    assert_eq!(parse_rough_date ("1st October 2017"), Some(NaiveDate::from_ymd(2017,10,1)));
-    assert_eq!(parse_rough_date ("26th September 2017"), Some(NaiveDate::from_ymd(2017,9,26)));
-    assert_eq!(parse_rough_date ("30th August 2017"), Some(NaiveDate::from_ymd(2017,8,30)));
-    assert_eq!(parse_rough_date ("28th July 2017"), Some(NaiveDate::from_ymd(2017,7,28)));
-    assert_eq!(parse_rough_date ("27th June 2017"), Some(NaiveDate::from_ymd(2017,6,27)));
-    assert_eq!(parse_rough_date ("28th May 2017"), Some(NaiveDate::from_ymd(2017,5,28)));
-    assert_eq!(parse_rough_date ("21st April 2017"), Some(NaiveDate::from_ymd(2017,4,21)));
-    assert_eq!(parse_rough_date ("26th March 2017"), Some(NaiveDate::from_ymd(2017,3,26)));
-    assert_eq!(parse_rough_date ("23rd February 2017"), Some(NaiveDate::from_ymd(2017,2,23)));
-    assert_eq!(parse_rough_date ("19th January 2017"), Some(NaiveDate::from_ymd(2017,1,19)));
+    assert_eq!(parse_rough_date (" 16th November 2017"), Some(NaiveDate::from_ymd(2017,11,16)));
+    assert_eq!(parse_rough_date (" 3rd November 2017"), Some(NaiveDate::from_ymd(2017,11,3)));
+    assert_eq!(parse_rough_date (" 2nd November 2017"), Some(NaiveDate::from_ymd(2017,11,2)));
+    assert_eq!(parse_rough_date (" 1st October 2017"), Some(NaiveDate::from_ymd(2017,10,1)));
+    assert_eq!(parse_rough_date (" 26th September 2017"), Some(NaiveDate::from_ymd(2017,9,26)));
+    assert_eq!(parse_rough_date (" 30th August 2017"), Some(NaiveDate::from_ymd(2017,8,30)));
+    assert_eq!(parse_rough_date (" 28th July 2017"), Some(NaiveDate::from_ymd(2017,7,28)));
+    assert_eq!(parse_rough_date (" 27th June 2017"), Some(NaiveDate::from_ymd(2017,6,27)));
+    assert_eq!(parse_rough_date (" 28th May 2017"), Some(NaiveDate::from_ymd(2017,5,28)));
+    assert_eq!(parse_rough_date (" 21st April 2017"), Some(NaiveDate::from_ymd(2017,4,21)));
+    assert_eq!(parse_rough_date (" 26th March 2017"), Some(NaiveDate::from_ymd(2017,3,26)));
+    assert_eq!(parse_rough_date (" 23rd February 2017"), Some(NaiveDate::from_ymd(2017,2,23)));
+    assert_eq!(parse_rough_date (" 19th January 2017"), Some(NaiveDate::from_ymd(2017,1,19)));
 }
 
 
@@ -84,10 +85,12 @@ fn extract_id_rough_date(id_date_raw: String) -> (String, String) {
     let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
     
 
-    let date = NaiveDate::parse_from_str(&date_string, "%d %B %Y");
+
     //let id = whitespace.take(2).collect::<String>();
     //let datestring = whitespace.skip(2).collect::<String>();
-    println!("{:?}", date);
+    
+    let date = parse_rough_date(&date_string);
+    println!("{}, \"{:?}\"", date_string, date);
     
     //Date::parse_from_str(, "")
     println!("{:?}", id_string);
