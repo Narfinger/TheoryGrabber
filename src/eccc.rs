@@ -71,7 +71,7 @@ fn get_url() -> String {
 /// this extracts the authors in the following way
 /// we split at whitespace, skip the first 5 which are id and link
 /// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"]
-fn extract_authors(authors_raw: String) -> Vec<String> {
+fn extract_authors(authors_raw: &str) -> Vec<String> {
     let enumerated_strings = authors_raw.split_whitespace().skip(5).map(String::from).enumerate();
     let (even, odd): (Vec<(usize, String)>, Vec<(usize, String)>) = enumerated_strings.partition(|&(x,ref el)| x % 2 == 0);
     let authors = even.into_iter().zip(odd).map(|((_,x),(_,y))| x + " " + &y).collect::<Vec<String>>();
@@ -79,7 +79,7 @@ fn extract_authors(authors_raw: String) -> Vec<String> {
     authors
 }
 
-fn extract_id_rough_date(id_date_raw: String) -> (String, NaiveDate) {
+fn extract_id_rough_date(id_date_raw: &str) -> (String, NaiveDate) {
     let mut id_vec = id_date_raw.split_whitespace().map(String::from).collect::<Vec<String>>();
     let date_vec = id_vec.split_off(2);
     let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
@@ -109,11 +109,11 @@ fn parse_single_div(div: Node) -> RoughPaper {
 
     let authors_raw = div.children().nth(1).unwrap().text();
     
-    let (id, date) = extract_id_rough_date(id_and_date_raw);
+    let (id, date) = extract_id_rough_date(&id_and_date_raw);
     let link = BASE_URL.to_owned() + link_raw.trim();
     let title = title_raw.trim();
 
-    let authors = extract_authors(authors_raw);
+    let authors = extract_authors(&authors_raw);
 
     //we need to get the full abstract and full time from the details page
     RoughPaper { title: title.to_string(), details_link: link.to_string(), source: Source::ECCC, rough_published: date, authors: authors } 
