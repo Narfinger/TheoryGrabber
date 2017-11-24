@@ -1,4 +1,4 @@
-use chrono::{Datelike, DateTime, Utc, NaiveDate};
+use chrono::{Datelike, DateTime, Utc, NaiveDate, TimeZone};
 use errors::*;
 use std::io::Read;
 use std::str::{FromStr,from_utf8};
@@ -9,6 +9,7 @@ use nom::{IResult};
 use select::document::Document;
 use select::predicate::{Attr, And, Class, Element, Name, Predicate};
 use select::node::Node;
+use url;
 use types::{Source, Paper};
 
 static ECCC: &'static str = "https://eccc.weizmann.ac.il/year/";
@@ -39,14 +40,30 @@ named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
         year: eccc_rough_year >>
     (NaiveDate::from_ymd(year as i32, month, day))));
 
-
 fn parse_rough_date(t: &str) -> Option<NaiveDate> {
     let st = t.trim();
     eccc_rough_date(st.as_bytes()).to_result().ok()
 }
 
+named!(eccc_date<&[u8],DateTime<Utc>>, do_parse!(
+    day: eccc_rough_day >>
+        tag!(" ") >>
+        month: eccc_rough_month >>
+        tag!(" ") >>
+        year: eccc_rough_year >>
+        tag!(" ") >>
+        hour: number >>
+        tag!(":") >>
+        minute: number >>
+    (Utc.ymd(year as i32, month, day).and_hms(hour, minute, 0))));
+
+fn parse_date(t: &str) -> Option<DateTime<Utc>> {
+    let st = t.trim();
+    eccc_date(st.as_bytes()).to_result().ok()
+}
+
 #[test]
-fn date_parse_test() {
+fn date_rough_parse_test() {
     //yes I am testing every month
     assert_eq!(parse_rough_date (" 16th November 2017"), Some(NaiveDate::from_ymd(2017,11,16)));
     assert_eq!(parse_rough_date (" 3rd November 2017"), Some(NaiveDate::from_ymd(2017,11,3)));
@@ -61,6 +78,11 @@ fn date_parse_test() {
     assert_eq!(parse_rough_date (" 26th March 2017"), Some(NaiveDate::from_ymd(2017,3,26)));
     assert_eq!(parse_rough_date (" 23rd February 2017"), Some(NaiveDate::from_ymd(2017,2,23)));
     assert_eq!(parse_rough_date (" 19th January 2017"), Some(NaiveDate::from_ymd(2017,1,19)));
+}
+
+#[test]
+fn date_parse_test() {
+    assert_eq!(parse_date(" 16th November 2017 04:24"), Some(Utc.ymd(2017,11,16).and_hms(4,24,0)));
 }
 
 /// The url we should look at. This is kind of rough as we just use the current year, hoping that nobody publishes around new year.
@@ -101,6 +123,11 @@ pub struct RoughPaper {
     pub authors: Vec<String>,
 }
 
+fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: DateTime<Utc>) -> Paper {
+    Paper{ title: p.title.to_owned(), source: p.source.to_owned(), authors: p.authors.to_owned(),
+           link: link, description: description, published: published }
+}
+
 /// takes one div and returns the parsed rough paper
 fn parse_single_div(div: Node) -> RoughPaper {
     let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
@@ -119,8 +146,8 @@ fn parse_single_div(div: Node) -> RoughPaper {
     RoughPaper { title: title.to_string(), details_link: link.to_string(), source: Source::ECCC, rough_published: date, authors: authors } 
 }
 
-/// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
-pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
+/// parses the year summary page
+fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let mut res = reqwest::get(get_url().as_str()).chain_err(|| "Can't get eccc")?;
     if !res.status().is_success() {
         return Err("Some error in getting the reqwuest".into());
@@ -128,19 +155,48 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     
     let mut res_string = String::new();
     res.read_to_string(&mut res_string)?;
-    //println!("{}", get_url());
     
     let parsedoc = Document::from(res_string.as_str());
-    //println!("res_string: {}", res_string);
     let divs = parsedoc.find(And(Name("div"),Attr("id", "box"))).take(1);
+        
+    Ok(divs.map(parse_single_div).collect::<Vec<RoughPaper>>())    
+}
+
+fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
+    let mut res = reqwest::get(&p.details_link).chain_err(|| "Can't get eccc")?;
+    if !res.status().is_success() {
+        return Err("Some error in getting the reqwuest".into());
+    } 
     
-    //println!("{:?}", divs.nth(0).unwrap());
+    let mut res_string = String::new();
+    res.read_to_string(&mut res_string)?;
     
-    let roughpapers = divs.map(parse_single_div).collect::<Vec<RoughPaper>>();    
-    println!("{:?}", roughpapers);
+    let parsedoc = Document::from(res_string.as_str());
+    let div = parsedoc.find(And(Name("div"),Attr("id", "box"))).nth(0).unwrap();
+
+    let id_and_date_text = div.children().nth(1).unwrap().text();
+    //format is TR17-177 | 16th November 2017 04:24, we skip the id part and add back the whitespaces
+    let date_string = id_and_date_text.split_whitespace().skip(2).take(4).fold(String::from(""), |acc, x| acc + " " + &x);
+    let date = parse_date(&date_string).unwrap();
     
+    //println!("date  {:?}", date_string);
+    //let date = id_and_date.split_whitespace().take(1).trim();
+    //println!("date {:?}", date);
+
+
+    //Ok(to_paper(p, link, description, date)
+    Err("not yet implemented".into())
+}
+
+/// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
+pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
+    let roughpapers = parse_eccc_summary()?;
+    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day());
+    //println!("{:?}", roughpapers);
+
+    let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published > naive_filter_date);
+    println!("doing map");
+    let papers = filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>();
+    println!("done map");
     return Ok(vec![]);
-    
-
-
 }
