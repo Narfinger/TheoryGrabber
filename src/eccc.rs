@@ -1,13 +1,65 @@
-use chrono::{Datelike, DateTime, Utc};
+use chrono::{Datelike, DateTime, Utc, NaiveDate};
 use errors::*;
 use std::io::Read;
+use std::str::{FromStr,from_utf8};
 use reqwest;
+use nom::digit;
+#[cfg(test)]
+use nom::{IResult};
 use select::document::Document;
 use select::predicate::{Attr, And, Class, Element, Name, Predicate};
 use types::Paper;
 
-
 static ECCC: &'static str = "https://eccc.weizmann.ac.il/year/";
+
+///eccc has a custom format chrono cannot parse, so we build a parser with nom
+named!(number<u32>, map_res!(map_res!(digit,from_utf8), FromStr::from_str) );
+named!(eccc_rough_day <&[u8], u32>, do_parse!(v: number >> alt!(tag!("st") | alt!(tag!("nd") | tag!("rd") | tag!("th"))) >> (v)) );
+named!(eccc_rough_month <&[u8], u32>, alt!(
+    tag!("January")   => {|_| 1 } |
+    tag!("February")  => {|_| 2 } |
+    tag!("March")     => {|_| 3 } |
+    tag!("April")     => {|_| 4 } |
+    tag!("May")       => {|_| 5 } |
+    tag!("June")      => {|_| 6 } |
+    tag!("July")      => {|_| 7 } |
+    tag!("August")    => {|_| 8 } |
+    tag!("September") => {|_| 9 } |
+    tag!("October")   => {|_| 10 } |
+    tag!("November")  => {|_| 11 } |
+    tag!("December")  => {|_| 12 }));
+named!(eccc_rough_year <&[u8], u32>, do_parse!(v: number >> (v)));
+named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
+    day: eccc_rough_day >>
+        tag!(" ") >>
+        month: eccc_rough_month >>
+        tag!(" ") >>
+        year: eccc_rough_year >>
+    (NaiveDate::from_ymd(year as i32, month, day))));
+
+
+fn parse_rough_date(t: &str) -> Option<NaiveDate> {
+    eccc_rough_date(t.as_bytes()).to_result().ok()
+}
+
+#[test]
+fn date_parse_test() {
+    //yes I am testing every month
+    assert_eq!(parse_rough_date ("16th November 2017"), Some(NaiveDate::from_ymd(2017,11,16)));
+    assert_eq!(parse_rough_date ("3rd November 2017"), Some(NaiveDate::from_ymd(2017,11,3)));
+    assert_eq!(parse_rough_date ("2nd November 2017"), Some(NaiveDate::from_ymd(2017,11,2)));
+    assert_eq!(parse_rough_date ("1st October 2017"), Some(NaiveDate::from_ymd(2017,10,1)));
+    assert_eq!(parse_rough_date ("26th September 2017"), Some(NaiveDate::from_ymd(2017,9,26)));
+    assert_eq!(parse_rough_date ("30th August 2017"), Some(NaiveDate::from_ymd(2017,8,30)));
+    assert_eq!(parse_rough_date ("28th July 2017"), Some(NaiveDate::from_ymd(2017,7,28)));
+    assert_eq!(parse_rough_date ("27th June 2017"), Some(NaiveDate::from_ymd(2017,6,27)));
+    assert_eq!(parse_rough_date ("28th May 2017"), Some(NaiveDate::from_ymd(2017,5,28)));
+    assert_eq!(parse_rough_date ("21st April 2017"), Some(NaiveDate::from_ymd(2017,4,21)));
+    assert_eq!(parse_rough_date ("26th March 2017"), Some(NaiveDate::from_ymd(2017,3,26)));
+    assert_eq!(parse_rough_date ("23rd February 2017"), Some(NaiveDate::from_ymd(2017,2,23)));
+    assert_eq!(parse_rough_date ("19th January 2017"), Some(NaiveDate::from_ymd(2017,1,19)));
+}
+
 
 fn get_url() -> String {
     ECCC.to_string() + &Utc::now().year().to_string() + "/"
@@ -31,9 +83,11 @@ fn extract_id_rough_date(id_date_raw: String) -> (String, String) {
     let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
     let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
     
+
+    let date = NaiveDate::parse_from_str(&date_string, "%d %B %Y");
     //let id = whitespace.take(2).collect::<String>();
     //let datestring = whitespace.skip(2).collect::<String>();
-    println!("{:?}", date_string);
+    println!("{:?}", date);
     
     //Date::parse_from_str(, "")
     println!("{:?}", id_string);

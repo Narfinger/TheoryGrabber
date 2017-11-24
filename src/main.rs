@@ -19,6 +19,8 @@ extern crate url;
 extern crate quick_xml;
 extern crate hyper;
 extern crate hyper_rustls;
+#[macro_use]
+extern crate nom;
 extern crate tokio_core;
 extern crate yup_oauth2 as oauth2;
 
