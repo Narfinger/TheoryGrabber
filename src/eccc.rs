@@ -7,7 +7,7 @@ use nom::digit;
 #[cfg(test)]
 use nom::{IResult};
 use select::document::Document;
-use select::predicate::{Attr, And, Class, Element, Name, Predicate};
+use select::predicate::{Attr, And, Name};
 use select::node::Node;
 use url;
 use types::{Source, Paper};
@@ -94,18 +94,19 @@ fn get_url() -> String {
 /// we split at whitespace, skip the first 5 which are id and link
 /// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"]
 fn extract_authors(authors_raw: &str) -> Vec<String> {
-    let enumerated_strings = authors_raw.split_whitespace().skip(5).map(String::from).enumerate();
-    let (even, odd): (Vec<(usize, String)>, Vec<(usize, String)>) = enumerated_strings.partition(|&(x,ref el)| x % 2 == 0);
-    let authors = even.into_iter().zip(odd).map(|((_,x),(_,y))| x + " " + &y).collect::<Vec<String>>();
+    type EnumeratedVec = (Vec<(usize, String)>, Vec<(usize, String)>);
 
-    authors
+    let enumerated_strings = authors_raw.split_whitespace().skip(5).map(String::from).enumerate();
+    let (even, odd): EnumeratedVec = enumerated_strings.partition(|&(x,_)| x % 2 == 0);
+
+    even.into_iter().zip(odd).map(|((_,x),(_,y))| x + " " + &y).collect::<Vec<String>>()
 }
 
 fn extract_id_rough_date(id_date_raw: &str) -> (String, NaiveDate) {
     let mut id_vec = id_date_raw.split_whitespace().map(String::from).collect::<Vec<String>>();
     let date_vec = id_vec.split_off(2);
-    let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
-    let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + &x);
+    let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
+    let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
     let date_naive = parse_rough_date(&date_string).unwrap();
    
     (id_string, date_naive)
@@ -136,7 +137,7 @@ fn parse_single_div(div: Node) -> RoughPaper {
 
     let authors_raw = div.children().nth(1).unwrap().text();
     
-    let (id, date) = extract_id_rough_date(&id_and_date_raw);
+    let (_, date) = extract_id_rough_date(&id_and_date_raw);
     let link = BASE_URL.to_owned() + link_raw.trim();
     let title = title_raw.trim();
 
@@ -157,7 +158,7 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     res.read_to_string(&mut res_string)?;
     
     let parsedoc = Document::from(res_string.as_str());
-    let divs = parsedoc.find(And(Name("div"),Attr("id", "box"))).take(1);
+    let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
         
     Ok(divs.map(parse_single_div).collect::<Vec<RoughPaper>>())    
 }
@@ -177,7 +178,7 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let id_and_date_text = div.children().nth(1).unwrap().text();
     
     //format is TR17-177 | 16th November 2017 04:24, we skip the id part and add back the whitespaces
-    let date_string = id_and_date_text.split_whitespace().skip(2).take(4).fold(String::from(""), |acc, x| acc + " " + &x);
+    let date_string = id_and_date_text.split_whitespace().skip(2).take(4).fold(String::from(""), |acc, x| acc + " " + x);
     let date = parse_date(&date_string).unwrap();
 
     let url_string = p.details_link.to_owned() + "/download";
@@ -201,7 +202,6 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     //println!("{:?}", roughpapers);
 
     let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published > naive_filter_date);
-    let papers = filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>();
 
-    papers
+    filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>()
 }

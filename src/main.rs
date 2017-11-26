@@ -42,7 +42,6 @@ pub mod gui;
 pub mod paper_dialog;
 pub mod types;
 
-use chrono::TimeZone;
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::copy;
@@ -103,13 +102,11 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
 
 
 fn run() -> Result<()> {
-    let papers = eccc::parse_eccc(chrono::Utc.ymd(1985, 1, 1).and_hms(0, 0, 1));
-    println!("{:?}", papers);
-    return Ok(());
-
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
+    println!("Deduplicate arxiv and eccc");
+
     
     let tk = drive::setup_oauth2();
     let directory_id = if let Ok(id) = config::read_directory_id() {
