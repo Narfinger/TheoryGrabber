@@ -175,17 +175,23 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let div = parsedoc.find(And(Name("div"),Attr("id", "box"))).nth(0).unwrap();
 
     let id_and_date_text = div.children().nth(1).unwrap().text();
+    
     //format is TR17-177 | 16th November 2017 04:24, we skip the id part and add back the whitespaces
     let date_string = id_and_date_text.split_whitespace().skip(2).take(4).fold(String::from(""), |acc, x| acc + " " + &x);
     let date = parse_date(&date_string).unwrap();
+
+    let url_string = p.details_link.to_owned() + "/download";
+    let link = url::Url::parse(&url_string).unwrap(); //we do not need to parse anything
+
+    //this check is for parser security as we just take an arbitrary child which is not very parsing save 
+    if div.children().nth(8).unwrap().text() != "Abstract:" {
+        return Err("Cannot find abstract".into());
+    }
+
+    //another "safety" check that it indeed has a <p> tag
+    let description = div.children().nth(11).unwrap().first_child().unwrap().text();
     
-    //println!("date  {:?}", date_string);
-    //let date = id_and_date.split_whitespace().take(1).trim();
-    //println!("date {:?}", date);
-
-
-    //Ok(to_paper(p, link, description, date)
-    Err("not yet implemented".into())
+    Ok(to_paper(p, link, description, date))
 }
 
 /// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
@@ -195,8 +201,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     //println!("{:?}", roughpapers);
 
     let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published > naive_filter_date);
-    println!("doing map");
     let papers = filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>();
-    println!("done map");
-    return Ok(vec![]);
+
+    papers
 }
