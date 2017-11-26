@@ -201,7 +201,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day());
     //println!("{:?}", roughpapers);
 
-    let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published > naive_filter_date);
+    let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published >= naive_filter_date);
 
     filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>()
 }

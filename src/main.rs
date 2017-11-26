@@ -95,6 +95,10 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
 
     papers_filtered.append(&mut eccc_papers);
+    progress_fetch_bar.set_message("Sorting and Deduping");
+    papers_filtered.sort_unstable();
+    types::dedup_papers(&mut papers_filtered);
+    
     progress_fetch_bar.finish_with_message("Done fetching");
     
     Ok(papers_filtered)

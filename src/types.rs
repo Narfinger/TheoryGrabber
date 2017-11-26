@@ -62,8 +62,17 @@ pub fn print_authors(paper: &Paper) -> String {
 pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
     paper
         .into_iter()
-        .filter(|p| p.published > date)
+        .filter(|p| p.published >= date)
         .collect::<Vec<Paper>>()
+}
+
+fn fuzzy_is_equal_different_source(v: &Vec<Paper>, p: &Paper) -> bool {
+    !v.iter().any(|q| p.source!=q.source && p.title==q.title)
+}
+
+pub fn dedup_papers(paper: &mut Vec<Paper>) {
+    let v = paper.clone();
+    paper.retain(|q| !fuzzy_is_equal_different_source(&v, q));
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
