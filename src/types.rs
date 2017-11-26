@@ -66,7 +66,7 @@ pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> 
         .collect::<Vec<Paper>>()
 }
 
-fn fuzzy_is_equal_different_source(v: &Vec<Paper>, p: &Paper) -> bool {
+fn fuzzy_is_equal_different_source(v: &[Paper], p: &Paper) -> bool {
     v.iter().any(|q| p.source != q.source && p.title==q.title)
 }
 
