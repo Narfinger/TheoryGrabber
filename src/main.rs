@@ -109,8 +109,6 @@ fn run() -> Result<()> {
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
-    println!("Deduplicate arxiv and eccc");
-
     
     let tk = drive::setup_oauth2();
     let directory_id = if let Ok(id) = config::read_directory_id() {
