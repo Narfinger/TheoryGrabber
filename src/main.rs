@@ -88,13 +88,13 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     progress_fetch_bar.set_style(ProgressStyle::default_bar()
                           .template("[{elapsed_precise}] {msg} {spinner:.green}"));
     progress_fetch_bar.enable_steady_tick(100);
-    let papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;
-    let mut papers_filtered = types::filter_papers(papers, utc);
-    
+    let mut papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;    
     progress_fetch_bar.set_message("Getting ECCC");
     let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
 
-    papers_filtered.append(&mut eccc_papers);
+    papers.append(&mut eccc_papers);
+
+    let mut papers_filtered = types::filter_papers(papers, utc);
     progress_fetch_bar.set_message("Sorting and Deduping");
     papers_filtered.sort_unstable();
     types::dedup_papers(&mut papers_filtered);
