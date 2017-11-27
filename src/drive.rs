@@ -86,7 +86,7 @@ fn make_filename(paper: &Paper) -> String {
     let mut title = paper.title.clone();
     title.truncate(75);
 
-    datestring.to_string() + "-" + &author_string(paper) + "-" + &title
+    datestring.to_string() + "-" + &author_string(paper) + "-" + &title + ".pdf"
 }
 
 //do progress bar
