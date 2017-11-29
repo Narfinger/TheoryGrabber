@@ -146,6 +146,27 @@ fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: Date
 
 /// takes one div and returns the parsed rough paper
 fn parse_single_div(div: Node) -> Result<RoughPaper> {
+    //testing if the unwraps are ok
+    //normally I would use different way to do this but I don't quite know how to make it work here
+    if div.find(Name("u")).nth(0).is_none() {
+        return Err("Could not find u name".into());
+    }
+    if div.find(Name("a")).nth(0).is_none() {
+        return Err("Could not find a name".into());
+    }
+    if div.find(Name("a")).nth(0).unwrap().attr("href").is_none() {
+        return Err("a name does not have href".into());
+    }
+    if div.find(Name("h4")).nth(0).is_none() {
+        return Err("could not find h4".into());
+    }
+
+    if  div.children().nth(1).is_none() {
+        return Err("authors not found".into())
+    }
+
+    
+
     let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
     let link_raw = div.find(Name("a")).nth(0).unwrap().attr("href").unwrap();
     let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
