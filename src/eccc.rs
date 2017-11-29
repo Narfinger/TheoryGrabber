@@ -41,9 +41,13 @@ named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
         year: eccc_rough_year >>
     (NaiveDate::from_ymd(year as i32, month, day))));
 
-fn parse_rough_date(t: &str) -> Option<NaiveDate> {
+fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     let st = t.trim();
-    eccc_rough_date(st.as_bytes()).to_result().ok()
+    if let Ok(s) = eccc_rough_date(st.as_bytes()).to_result() {
+        Ok(s)
+    } else {
+        Err("Error parsing rough date".into())
+    }
 }
 
 named!(eccc_date<&[u8],NaiveDateTime>, do_parse!(
@@ -72,19 +76,19 @@ fn parse_date(t: &str) -> Result<DateTime<Utc>> {
 #[test]
 fn date_rough_parse_test() {
     //yes I am testing every month
-    assert_eq!(parse_rough_date (" 16th November 2017"), Some(NaiveDate::from_ymd(2017,11,16)));
-    assert_eq!(parse_rough_date (" 3rd November 2017"), Some(NaiveDate::from_ymd(2017,11,3)));
-    assert_eq!(parse_rough_date (" 2nd November 2017"), Some(NaiveDate::from_ymd(2017,11,2)));
-    assert_eq!(parse_rough_date (" 1st October 2017"), Some(NaiveDate::from_ymd(2017,10,1)));
-    assert_eq!(parse_rough_date (" 26th September 2017"), Some(NaiveDate::from_ymd(2017,9,26)));
-    assert_eq!(parse_rough_date (" 30th August 2017"), Some(NaiveDate::from_ymd(2017,8,30)));
-    assert_eq!(parse_rough_date (" 28th July 2017"), Some(NaiveDate::from_ymd(2017,7,28)));
-    assert_eq!(parse_rough_date (" 27th June 2017"), Some(NaiveDate::from_ymd(2017,6,27)));
-    assert_eq!(parse_rough_date (" 28th May 2017"), Some(NaiveDate::from_ymd(2017,5,28)));
-    assert_eq!(parse_rough_date (" 21st April 2017"), Some(NaiveDate::from_ymd(2017,4,21)));
-    assert_eq!(parse_rough_date (" 26th March 2017"), Some(NaiveDate::from_ymd(2017,3,26)));
-    assert_eq!(parse_rough_date (" 23rd February 2017"), Some(NaiveDate::from_ymd(2017,2,23)));
-    assert_eq!(parse_rough_date (" 19th January 2017"), Some(NaiveDate::from_ymd(2017,1,19)));
+    assert_eq!(parse_rough_date (" 16th November 2017"),  Ok(NaiveDate::from_ymd(2017,11,16)));
+    assert_eq!(parse_rough_date (" 3rd November 2017"),   Ok(NaiveDate::from_ymd(2017,11,3)));
+    assert_eq!(parse_rough_date (" 2nd November 2017"),   Ok(NaiveDate::from_ymd(2017,11,2)));
+    assert_eq!(parse_rough_date (" 1st October 2017"),    Ok(NaiveDate::from_ymd(2017,10,1)));
+    assert_eq!(parse_rough_date (" 26th September 2017"), Ok(NaiveDate::from_ymd(2017,9,26)));
+    assert_eq!(parse_rough_date (" 30th August 2017"),    Ok(NaiveDate::from_ymd(2017,8,30)));
+    assert_eq!(parse_rough_date (" 28th July 2017"),      Ok(NaiveDate::from_ymd(2017,7,28)));
+    assert_eq!(parse_rough_date (" 27th June 2017"),      Ok(NaiveDate::from_ymd(2017,6,27)));
+    assert_eq!(parse_rough_date (" 28th May 2017"),       Ok(NaiveDate::from_ymd(2017,5,28)));
+    assert_eq!(parse_rough_date (" 21st April 2017"),     Ok(NaiveDate::from_ymd(2017,4,21)));
+    assert_eq!(parse_rough_date (" 26th March 2017"),     Ok(NaiveDate::from_ymd(2017,3,26)));
+    assert_eq!(parse_rough_date (" 23rd February 2017"),  Ok(NaiveDate::from_ymd(2017,2,23)));
+    assert_eq!(parse_rough_date (" 19th January 2017"),   Ok(NaiveDate::from_ymd(2017,1,19)));
 }
 
 #[test]
@@ -109,14 +113,14 @@ fn extract_authors(authors_raw: &str) -> Vec<String> {
     even.into_iter().zip(odd).map(|((_,x),(_,y))| x + " " + &y).collect::<Vec<String>>()
 }
 
-fn extract_id_rough_date(id_date_raw: &str) -> (String, NaiveDate) {
+fn extract_id_rough_date(id_date_raw: &str) -> Result<(String, NaiveDate)> {
     let mut id_vec = id_date_raw.split_whitespace().map(String::from).collect::<Vec<String>>();
     let date_vec = id_vec.split_off(2);
     let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
     let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
-    let date_naive = parse_rough_date(&date_string).unwrap();
+    let date_naive = parse_rough_date(&date_string)?;
    
-    (id_string, date_naive)
+    Ok((id_string, date_naive))
 }
 
 /// A rough paper gathers the information we can get from the summary page. Notice that the link and the date are not correct.
@@ -137,21 +141,21 @@ fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: Date
 }
 
 /// takes one div and returns the parsed rough paper
-fn parse_single_div(div: Node) -> RoughPaper {
+fn parse_single_div(div: Node) -> Result<RoughPaper> {
     let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
     let link_raw = div.find(Name("a")).nth(0).unwrap().attr("href").unwrap();
     let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
 
     let authors_raw = div.children().nth(1).unwrap().text();
     
-    let (_, date) = extract_id_rough_date(&id_and_date_raw);
+    let (_, date) = extract_id_rough_date(&id_and_date_raw)?;
     let link = BASE_URL.to_owned() + link_raw.trim();
     let title = title_raw.trim();
 
     let authors = extract_authors(&authors_raw);
 
     //we need to get the full abstract and full time from the details page
-    RoughPaper { title: title.to_string(), details_link: link.to_string(), source: Source::ECCC, rough_published: date, authors: authors } 
+    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), source: Source::ECCC, rough_published: date, authors: authors }) 
 }
 
 /// parses the year summary page
@@ -167,7 +171,7 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let parsedoc = Document::from(res_string.as_str());
     let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
         
-    Ok(divs.map(parse_single_div).collect::<Vec<RoughPaper>>())    
+    divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()    
 }
 
 fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
