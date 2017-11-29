@@ -50,7 +50,7 @@ fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     }
 }
 
-named!(eccc_date<&[u8],NaiveDateTime>, do_parse!(
+named!(eccc_date_time<&[u8],NaiveDateTime>, do_parse!(
     day: eccc_rough_day >>
         tag!(" ") >>
         month: eccc_rough_month >>
@@ -65,7 +65,7 @@ named!(eccc_date<&[u8],NaiveDateTime>, do_parse!(
 /// This uses Israel Standard time at the moment. This might change when eccc moves.
 fn parse_date(t: &str) -> Result<DateTime<Utc>> {
     let st = t.trim();
-    let naive = eccc_date(st.as_bytes()).to_result()?;
+    let naive = eccc_date_time(st.as_bytes()).to_result()?;
     if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
         Ok(israel.with_timezone(&Utc))
     } else {
@@ -76,24 +76,28 @@ fn parse_date(t: &str) -> Result<DateTime<Utc>> {
 #[test]
 fn date_rough_parse_test() {
     //yes I am testing every month
-    assert_eq!(parse_rough_date (" 16th November 2017"),  Ok(NaiveDate::from_ymd(2017,11,16)));
-    assert_eq!(parse_rough_date (" 3rd November 2017"),   Ok(NaiveDate::from_ymd(2017,11,3)));
-    assert_eq!(parse_rough_date (" 2nd November 2017"),   Ok(NaiveDate::from_ymd(2017,11,2)));
-    assert_eq!(parse_rough_date (" 1st October 2017"),    Ok(NaiveDate::from_ymd(2017,10,1)));
-    assert_eq!(parse_rough_date (" 26th September 2017"), Ok(NaiveDate::from_ymd(2017,9,26)));
-    assert_eq!(parse_rough_date (" 30th August 2017"),    Ok(NaiveDate::from_ymd(2017,8,30)));
-    assert_eq!(parse_rough_date (" 28th July 2017"),      Ok(NaiveDate::from_ymd(2017,7,28)));
-    assert_eq!(parse_rough_date (" 27th June 2017"),      Ok(NaiveDate::from_ymd(2017,6,27)));
-    assert_eq!(parse_rough_date (" 28th May 2017"),       Ok(NaiveDate::from_ymd(2017,5,28)));
-    assert_eq!(parse_rough_date (" 21st April 2017"),     Ok(NaiveDate::from_ymd(2017,4,21)));
-    assert_eq!(parse_rough_date (" 26th March 2017"),     Ok(NaiveDate::from_ymd(2017,3,26)));
-    assert_eq!(parse_rough_date (" 23rd February 2017"),  Ok(NaiveDate::from_ymd(2017,2,23)));
-    assert_eq!(parse_rough_date (" 19th January 2017"),   Ok(NaiveDate::from_ymd(2017,1,19)));
+    assert_eq!(parse_rough_date (" 16th November 2017").ok(),  Some(NaiveDate::from_ymd(2017,11,16)));
+    assert_eq!(parse_rough_date (" 3rd November 2017").ok(),   Some(NaiveDate::from_ymd(2017,11,3)));
+    assert_eq!(parse_rough_date (" 2nd November 2017").ok(),   Some(NaiveDate::from_ymd(2017,11,2)));
+    assert_eq!(parse_rough_date (" 1st October 2017").ok(),    Some(NaiveDate::from_ymd(2017,10,1)));
+    assert_eq!(parse_rough_date (" 26th September 2017").ok(), Some(NaiveDate::from_ymd(2017,9,26)));
+    assert_eq!(parse_rough_date (" 30th August 2017").ok(),    Some(NaiveDate::from_ymd(2017,8,30)));
+    assert_eq!(parse_rough_date (" 28th July 2017").ok(),      Some(NaiveDate::from_ymd(2017,7,28)));
+    assert_eq!(parse_rough_date (" 27th June 2017").ok(),      Some(NaiveDate::from_ymd(2017,6,27)));
+    assert_eq!(parse_rough_date (" 28th May 2017").ok(),       Some(NaiveDate::from_ymd(2017,5,28)));
+    assert_eq!(parse_rough_date (" 21st April 2017").ok(),     Some(NaiveDate::from_ymd(2017,4,21)));
+    assert_eq!(parse_rough_date (" 26th March 2017").ok(),     Some(NaiveDate::from_ymd(2017,3,26)));
+    assert_eq!(parse_rough_date (" 23rd February 2017").ok(),  Some(NaiveDate::from_ymd(2017,2,23)));
+    assert_eq!(parse_rough_date (" 19th January 2017").ok(),   Some(NaiveDate::from_ymd(2017,1,19)));
 }
 
 #[test]
 fn date_parse_test() {
-    assert_eq!(parse_date(" 16th November 2017 04:24"), Some(Utc.ymd(2017,11,16).and_hms(4,24,0)));
+    //parsing without timezone
+    assert_eq!(eccc_date_time(&b"16th November 2017 04:24"[..]), IResult::Done(&b""[..], NaiveDate::from_ymd(2017,11,16).and_hms(4,24,0)));
+
+    //with timezone
+    assert_eq!(parse_date(" 16th November 2017 04:24").ok(), Some(Utc.ymd(2017,11,16).and_hms(2,24,0)));
 }
 
 /// The url we should look at. This is kind of rough as we just use the current year, hoping that nobody publishes around new year.
