@@ -1,4 +1,5 @@
-use chrono::{Datelike, DateTime, Utc, NaiveDate, TimeZone};
+use chrono::{Datelike, DateTime, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Asia::Jerusalem;
 use errors::*;
 use std::io::Read;
 use std::str::{FromStr,from_utf8};
@@ -45,7 +46,7 @@ fn parse_rough_date(t: &str) -> Option<NaiveDate> {
     eccc_rough_date(st.as_bytes()).to_result().ok()
 }
 
-named!(eccc_date<&[u8],DateTime<Utc>>, do_parse!(
+named!(eccc_date<&[u8],NaiveDateTime>, do_parse!(
     day: eccc_rough_day >>
         tag!(" ") >>
         month: eccc_rough_month >>
@@ -55,11 +56,17 @@ named!(eccc_date<&[u8],DateTime<Utc>>, do_parse!(
         hour: number >>
         tag!(":") >>
         minute: number >>
-    (Utc.ymd(year as i32, month, day).and_hms(hour, minute, 0))));
+    (NaiveDate::from_ymd(year as i32, month, day).and_hms(hour, minute, 0))));
 
-fn parse_date(t: &str) -> Option<DateTime<Utc>> {
+/// This uses Israel Standard time at the moment. This might change when eccc moves.
+fn parse_date(t: &str) -> Result<DateTime<Utc>> {
     let st = t.trim();
-    eccc_date(st.as_bytes()).to_result().ok()
+    let naive = eccc_date(st.as_bytes()).to_result()?;
+    if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
+        Ok(israel.with_timezone(&Utc))
+    } else {
+        Err("timezone conversion failed".into())
+    }
 }
 
 #[test]

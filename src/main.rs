@@ -2,6 +2,7 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![recursion_limit="128"]
 extern crate chrono;
+extern crate chrono_tz;
 extern crate cursive;
 extern crate cursive_table_view;
 #[macro_use]
@@ -30,6 +31,7 @@ mod errors {
             Io(::std::io::Error);
             Serde(::serde_yaml::Error);
             Reqwest(::reqwest::Error);
+            Nom(::nom::ErrorKind);
         }
     }
 }
