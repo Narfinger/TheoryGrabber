@@ -46,6 +46,7 @@ pub mod types;
 
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
+use std::thread;
 use std::io::copy;
 use std::fs::File;
 use std::path::Path;
@@ -86,14 +87,18 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     let utc = config::read_config_time_or_default();
 
     let progress_fetch_bar = ProgressBar::new_spinner();
-    progress_fetch_bar.set_message("Getting Arxiv");
+    progress_fetch_bar.set_message("Getting Arxiv/ECCC");
     progress_fetch_bar.set_style(ProgressStyle::default_bar()
                           .template("[{elapsed_precise}] {msg} {spinner:.green}"));
     progress_fetch_bar.enable_steady_tick(100);
-    let mut papers = arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")?;    
-    progress_fetch_bar.set_message("Getting ECCC");
-    let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
 
+    let handle = thread::spawn(|| {
+        arxiv::parse_arxiv().chain_err(|| "Error in parsing arxiv papers")
+    });
+    
+    let mut eccc_papers = eccc::parse_eccc(utc).chain_err(|| "Error in parsing eccc")?;
+    let mut papers = handle.join().unwrap()?; //I do not like that we have to use unwrap here but I do not know how to use ? with error_chain with these types
+    
     papers.append(&mut eccc_papers);
 
     let mut papers_filtered = types::filter_papers(papers, utc);
