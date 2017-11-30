@@ -3,6 +3,10 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
 use url;
+#[cfg(test)]
+use chrono::Utc;
+
+
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Source {
@@ -66,13 +70,29 @@ pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> 
         .collect::<Vec<Paper>>()
 }
 
-fn fuzzy_is_equal_different_source(v: &[Paper], p: &Paper) -> bool {
-    v.iter().any(|q| p.source != q.source && p.title==q.title)
+/// If we find an eccc and an arxiv version,
+fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
+    v.iter().any(|q| p.source == Source::Arxiv && q.source == Source::ECCC && p.title == q.title)
 }
 
+#[test]
+fn dedup_test() {
+    let exurl = url::Url::parse("https://www.example.com").unwrap();
+    let p1 = Paper { title: String::from("Test1"), description: String::from("a"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author1"), String::from("Author2")], source: Source::ECCC};
+    let p1eq = Paper {title: String::from("Test1"), description: String::from("b"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author2"), String::from("Author1")], source: Source::Arxiv};
+    let p2 = Paper {title: String::from("Test1 t"), description: String::from("c"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author3"), String::from("Author2")], source: Source::Arxiv};
+    
+    
+
+    let mut v = vec![p1.clone(), p1eq, p2.clone()];
+    dedup_papers(&mut v);
+    assert_eq!(vec![p1.clone(),p2.clone()], v);
+}
+
+/// Remove papers that are doubled in the vector. 
 pub fn dedup_papers(paper: &mut Vec<Paper>) {
     let v = paper.clone();
-    paper.retain(|q| !fuzzy_is_equal_different_source(&v, q));
+    paper.retain(|q| !fuzzy_exists_equal_different_source(&v, q));
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
