@@ -12,6 +12,7 @@ error-chain = "0.11"           # Yet another error boilerplate library.
 hyper = "0.10"                            # A modern HTTP library.
 hyper-rustls = "0.6.1"             # Rustls+hyper integration for pure rust HTTPS
 indicatif = "0.8"    # A progress bar and cli reporting library for Rust
+rayon = "0.9"               # Simple work-stealing parallelism for Rust
 reqwest = "0.8"             # higher level HTTP client library
 select = "0.4.2"                         # A library to extract useful data from HTML documents, suitable for web scraping.
 serde = "1.0"                      # A generic serialization/deserialization framework

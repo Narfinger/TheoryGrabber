@@ -7,6 +7,7 @@ use reqwest;
 use nom::digit;
 #[cfg(test)]
 use nom::{IResult};
+use rayon::prelude::*;
 use select::document::Document;
 use select::predicate::{Attr, And, Name};
 use select::node::Node;
@@ -233,11 +234,12 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
 
 /// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
 pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
-    let roughpapers = parse_eccc_summary()?;
+    let rough_papers = parse_eccc_summary()?;
     let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day());
     //println!("{:?}", roughpapers);
 
-    let filtered_rough_papers = roughpapers.iter().filter(|p| p.rough_published >= naive_filter_date);
-
-    filtered_rough_papers.into_iter().map(parse_eccc_details).collect::<Result<Vec<Paper>>>()
+    rough_papers
+        .par_iter()
+        .filter(|p| p.rough_published >= naive_filter_date)
+        .map(parse_eccc_details).collect::<Result<Vec<Paper>>>()
 }

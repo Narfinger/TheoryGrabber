@@ -9,6 +9,7 @@ extern crate cursive_table_view;
 extern crate error_chain;
 extern crate indicatif;
 extern crate reqwest;
+extern crate rayon;
 extern crate select;
 extern crate serde_json;
 extern crate serde_yaml;
