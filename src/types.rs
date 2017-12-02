@@ -62,6 +62,19 @@ pub fn print_authors(paper: &Paper) -> String {
     //}
 }
 
+#[test]
+fn filter_test() {
+    let exurl = url::Url::parse("https://www.example.com").unwrap();
+    let p1 = Paper { title: String::from("Test1"), description: String::from("a"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author1"), String::from("Author2")], source: Source::ECCC};
+
+    let now = Utc::now();
+    
+    let p2 = Paper {title: String::from("Test2"), description: String::from("b"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author2"), String::from("Author1")], source: Source::Arxiv};
+    let p3 = Paper {title: String::from("Test3"), description: String::from("c"), link: exurl.clone(), published: Utc::now(), authors: vec![String::from("Author3"), String::from("Author2")], source: Source::Arxiv};
+
+    let vec = vec![p1.clone(), p2.clone(), p3.clone()];
+    assert_eq!(filter_papers(vec, now), vec![p2,p3]);
+}
 
 pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
     paper
