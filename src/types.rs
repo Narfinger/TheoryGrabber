@@ -11,7 +11,7 @@ use url;
 use chrono::Utc;
 
 
-
+/// Shows where the paper came from.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Source {
     Arxiv,
@@ -29,13 +29,20 @@ impl fmt::Display for Source {
     }
 }
 
+/// Struct for denoting a paper.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Paper {
+    /// The title of the paper
     pub title: String,
+    /// Description/Abstract of the paper
     pub description: String,
+    /// Url where the paper can be downloaded
     pub link: url::Url,
+    /// Where did we parse the paper from
     pub source: Source,
+    /// The publication date as given by the source in Utc timezone
     pub published: chrono::DateTime<chrono::Utc>,
+    /// A list of authors which can be in arbitrary order.
     pub authors: Vec<String>,
 }
 
@@ -51,11 +58,15 @@ impl PartialOrd for Paper {
     }
 }
 
+/// This represents a paper that is downloaded.
 pub struct DownloadedPaper<'a> {
+    /// The paper that is downloaded
     pub paper: &'a Paper,
+    /// The path where we stored the pdf file
     pub path: PathBuf,
 }
 
+/// Helper function to print authors
 pub fn print_authors(paper: &Paper) -> String {
     //if let Some(x) = paper.authors.first() {
     let mut iterator = paper.authors.iter();
@@ -128,7 +139,7 @@ fn fuzzy_exists_test() {
     assert_eq!(fuzzy_exists_equal_different_source(&vec, &p2), false);
 }
 
-/// If we find an eccc and an arxiv version,
+/// If 'p' is an Arxiv version, test if there exists an ECCC version with the same title.
 fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
     v.iter().any(|q| p.source == Source::Arxiv && q.source == Source::ECCC && p.title == q.title)
 }
@@ -153,6 +164,7 @@ pub fn dedup_papers(paper: &mut Vec<Paper>) {
     paper.retain(|q| !fuzzy_exists_equal_different_source(&v, q));
 }
 
+/// Column Type for the cursive view.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BasicColumn {
     Title,
