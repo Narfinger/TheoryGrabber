@@ -1,7 +1,11 @@
 use chrono;
+use chrono::Weekday;
+use chrono_tz::America::New_York;
+use chrono::Datelike;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
+use chrono::Duration;
 use url;
 #[cfg(test)]
 use chrono::Utc;
@@ -76,10 +80,39 @@ fn filter_test() {
     assert_eq!(filter_papers(vec, now), vec![p2,p3]);
 }
 
+/// Special filter function because arxiv is a bit special.
+/// Arxiv does
+/// not publish on weekends.  For all other days, the following could
+/// occur. Arxiv publishes at (for example) UTC 00:00. Papers that are
+/// submitted at UTC 01:00 are not included. If we check at UTC 02:00,
+/// we lose these papers as we filter with UTC>= 02:00. We use
+/// 'special_filter'.
+fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
+    match p.source {
+        Source::ECCC => p.published >= date,
+        Source::Arxiv => {
+            let mut perhaps_date: chrono::DateTime<chrono::Utc> = date.date().with_timezone(&New_York).and_hms(14,0,0).with_timezone(&chrono::Utc);
+            if perhaps_date >= date {
+                perhaps_date = perhaps_date - Duration::days(1);
+            }
+            if perhaps_date.weekday() == Weekday::Sat {
+                perhaps_date = perhaps_date - Duration::days(1);
+            } else if perhaps_date.weekday() == Weekday::Sun {
+                perhaps_date = perhaps_date - Duration::days(2);
+            }
+                        
+            p.published > perhaps_date
+        }
+    } 
+}
+
+/// Filters papers.
+/// Arxiv needs a special filtering as there could be following occurence.
+/// Arxiv publishes at (for example) UTC 00:00. Papers that are submitted  at UTC 01:00 are not included. If we check at UTC 02:00, we lose these papers as we filter with UTC>= 02:00. We use 'special_filter'.
 pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
     paper
         .into_iter()
-        .filter(|p| p.published >= date)
+        .filter(|p| special_filter(date, p))
         .collect::<Vec<Paper>>()
 }
 
