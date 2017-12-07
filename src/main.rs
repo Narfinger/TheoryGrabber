@@ -30,6 +30,7 @@ mod errors {
         foreign_links {
             Io(::std::io::Error);
             Serde(::serde_yaml::Error);
+            SerdeJson(::serde_json::Error);
             Reqwest(::reqwest::Error);
             Nom(::nom::ErrorKind);
         }
@@ -117,7 +118,7 @@ fn run() -> Result<()> {
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
     
-    let tk = drive::setup_oauth2();
+    let tk = drive::setup_oauth2()?;
     let directory_id = if let Ok(id) = config::read_directory_id() {
         id
     } else {

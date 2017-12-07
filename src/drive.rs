@@ -35,33 +35,36 @@ struct FileUploadJSON {
     parents: Vec<String>
 } 
     
-pub fn setup_oauth2() -> oauth2::Token {
+pub fn setup_oauth2() -> Result<oauth2::Token> {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
-    let secret = json::from_reader::<File, ConsoleApplicationSecret>(f)
-        .unwrap()
-        .installed
-        .unwrap();
-    let mut cwd = std::env::current_dir().unwrap();
-    cwd.push("tk");
-    let cwd: String = String::from(cwd.to_str().expect("string conversion error"));
-    let ntk = DiskTokenStorage::new(&cwd).expect("disk storage token is broken");
-
-    //let mut core = tokio_core::reactor::Core::new().unwrap();
-    //let handle = core.handle();
-
-    //let client = HttpsConnector::new(2,&handle);
-    let client = hyper::Client::with_connector(HttpsConnector::new(hyper_rustls::TlsClient::new()));
-    let realtk = Authenticator::new(
-        &secret,
-        DefaultAuthenticatorDelegate,
-        client,
-        ntk,
-        Some(FlowType::InstalledInteractive),
-    ).token(&["https://www.googleapis.com/auth/drive.file"]);
-    if let Err(e) = realtk {
-        panic!("Error in token generation: {:?}", e);
+    let pre_secret = json::from_reader::<File, ConsoleApplicationSecret>(f).map(|s| s.installed)?;
+    if let Some(secret) = pre_secret { 
+        let mut cwd = std::env::current_dir()?;
+        cwd.push("tk");
+        let cwd: String = String::from(cwd.to_str().expect("string conversion error"));
+        let ntk = DiskTokenStorage::new(&cwd)?;
+        
+        //let mut core = tokio_core::reactor::Core::new().unwrap();
+        //let handle = core.handle();
+        
+        //let client = HttpsConnector::new(2,&handle);
+        let client = hyper::Client::with_connector(HttpsConnector::new(hyper_rustls::TlsClient::new()));
+        let realtk = Authenticator::new(
+            &secret,
+            DefaultAuthenticatorDelegate,
+            client,
+            ntk,
+            Some(FlowType::InstalledInteractive),
+        ).token(&["https://www.googleapis.com/auth/drive.file"]);
+        
+        if let Ok(s) = realtk {
+            Ok(s)
+        } else {
+            Err("Error getting token".into())
+        }
+    } else {
+        Err("Error getting token".into())
     }
-    realtk.unwrap()
 }
 
 fn get_last_name_initials(author: &str) -> char {
