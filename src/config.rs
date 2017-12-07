@@ -27,7 +27,7 @@ fn write_config_file(c: &Config) -> Result<()> {
     file.write_all(st.as_bytes()).chain_err(|| "Cannot write")
 }
 
-/// Read config time from config file
+/// Read config time from config file.
 fn read_config_time() -> Result<chrono::DateTime<chrono::Utc>> {
     let c = read_config_file()?;
     Ok(c.last_checked)

@@ -14,7 +14,9 @@ use chrono::Utc;
 /// Shows where the paper came from.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Source {
+    /// The Source is ArXiV.org.
     Arxiv,
+    /// The source is ECCC (Electronic Colloqium on Complexity).
     ECCC,
 }
 
@@ -32,15 +34,15 @@ impl fmt::Display for Source {
 /// Struct for denoting a paper.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Paper {
-    /// The title of the paper
+    /// The title of the paper.
     pub title: String,
-    /// Description/Abstract of the paper
+    /// Description/Abstract of the paper.
     pub description: String,
-    /// Url where the paper can be downloaded
+    /// Url where the paper can be downloaded.
     pub link: url::Url,
-    /// Where did we parse the paper from
+    /// Where did we parse the paper from.
     pub source: Source,
-    /// The publication date as given by the source in Utc timezone
+    /// The publication date as given by the source in Utc timezone.
     pub published: chrono::DateTime<chrono::Utc>,
     /// A list of authors which can be in arbitrary order.
     pub authors: Vec<String>,
@@ -66,7 +68,7 @@ pub struct DownloadedPaper<'a> {
     pub path: PathBuf,
 }
 
-/// Helper function to print authors
+/// Helper function to print authors.
 pub fn print_authors(paper: &Paper) -> String {
     //if let Some(x) = paper.authors.first() {
     let mut iterator = paper.authors.iter();
