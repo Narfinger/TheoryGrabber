@@ -7,7 +7,7 @@ use serde_yaml;
 
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize)]
-pub struct Config {
+struct Config {
     /// The Utc time when we last checked for new papers.
     last_checked: chrono::DateTime<chrono::Utc>,
     /// the google drive directory id.
