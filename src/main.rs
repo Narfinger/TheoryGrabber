@@ -54,6 +54,7 @@ use std::path::Path;
 use types::{DownloadedPaper, Paper};
 use tempdir::TempDir;
 
+/// Downloads the papers to the TempDir.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
     let mut files: Vec<DownloadedPaper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
@@ -84,6 +85,7 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     Ok(files)
 }
 
+/// Fetches the papers and filters for new papers.
 fn get_and_filter_papers() -> Result<Vec<Paper>> {
     let utc = config::read_config_time_or_default();
 

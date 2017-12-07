@@ -42,6 +42,7 @@ named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
         year: eccc_rough_year >>
     (NaiveDate::from_ymd(year as i32, month, day))));
 
+/// Parses a date from the overview page.
 fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     let st = t.trim();
     if let Ok(s) = eccc_rough_date(st.as_bytes()).to_result() {
@@ -106,9 +107,9 @@ fn get_url() -> String {
     ECCC.to_string() + &Utc::now().year().to_string() + "/"
 }
 
-/// this extracts the authors in the following way
-/// we split at whitespace, skip the first 5 which are id and link
-/// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"]
+/// This extracts the authors.
+/// We split at whitespace, skip the first 5 which are id and link
+/// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"].
 fn extract_authors(authors_raw: &str) -> Vec<String> {
     type EnumeratedVec = (Vec<(usize, String)>, Vec<(usize, String)>);
 
@@ -118,6 +119,7 @@ fn extract_authors(authors_raw: &str) -> Vec<String> {
     even.into_iter().zip(odd).map(|((_,x),(_,y))| x + " " + &y).collect::<Vec<String>>()
 }
 
+/// This extracts the id and rough date from the `id_date_raw` string.
 fn extract_id_rough_date(id_date_raw: &str) -> Result<(String, NaiveDate)> {
     let mut id_vec = id_date_raw.split_whitespace().map(String::from).collect::<Vec<String>>();
     let date_vec = id_vec.split_off(2);
@@ -128,24 +130,26 @@ fn extract_id_rough_date(id_date_raw: &str) -> Result<(String, NaiveDate)> {
     Ok((id_string, date_naive))
 }
 
-/// A rough paper gathers the information we can get from the summary page. Notice that the link and the date are not correct.
-/// The link is a link to the details page
-/// the date is just a date without any time.
+/// A rough paper gathers the information we can get from the summary page.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RoughPaper {
+struct RoughPaper {
+    /// The title of the paper.
     pub title: String,
+    /// The link to the details page, not the link to the paper pdf.
     pub details_link: String,
-    pub source: Source,
+    /// The date when the ppaer was published. This does not include a time.
     pub rough_published: NaiveDate,
+    /// The authors of the paper.
     pub authors: Vec<String>,
 }
 
+/// Converts a `RoughPaper` to a `Paper` with the missing fields given. 
 fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: DateTime<Utc>) -> Paper {
-    Paper{ title: p.title.to_owned(), source: p.source.to_owned(), authors: p.authors.to_owned(),
+    Paper{ title: p.title.to_owned(), source: Source::ECCC, authors: p.authors.to_owned(),
            link: link, description: description, published: published }
 }
 
-/// takes one div and returns the parsed rough paper
+/// Takes one div and returns the parsed `RoughPaper`.
 fn parse_single_div(div: Node) -> Result<RoughPaper> {
     //testing if the unwraps are ok
     //normally I would use different way to do this but I don't quite know how to make it work here
@@ -181,10 +185,11 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
     let authors = extract_authors(&authors_raw);
 
     //we need to get the full abstract and full time from the details page
-    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), source: Source::ECCC, rough_published: date, authors: authors }) 
+    
+    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), rough_published: date, authors: authors }) 
 }
 
-/// parses the year summary page
+/// Parses the year summary page.
 fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let mut res = reqwest::get(get_url().as_str()).chain_err(|| "Can't get eccc")?;
     if !res.status().is_success() {
@@ -200,6 +205,7 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()    
 }
 
+/// Function that queries and parses the details page for a given `RoughPaper`.
 fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let mut res = reqwest::get(&p.details_link).chain_err(|| "Can't get eccc")?;
     if !res.status().is_success() {
@@ -232,11 +238,10 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     Ok(to_paper(p, link, description, date))
 }
 
-/// The full abstract is in the details so we better filter before we look into the details of a million papers. Hence this function needs a filter time
+/// This parses the whole ECCC by first looking at the current year, getting these details and filtering and then parsing the details pages to construct full papers.
 pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let rough_papers = parse_eccc_summary()?;
     let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day());
-    //println!("{:?}", roughpapers);
 
     rough_papers
         .par_iter()

@@ -44,6 +44,7 @@ fn table_on_submit(siv: &mut Cursive, row: usize, index: usize) {
     siv.add_layer(paper_dialog::new(&value, row, index));
 }
 
+/// Clears the table and quits the gui.
 fn button_quit(siv: &mut Cursive) {
     siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
         table.clear();
@@ -51,12 +52,13 @@ fn button_quit(siv: &mut Cursive) {
     siv.quit();
 }
 
+/// Set that we should save the date and quits the gui.
 fn button_download_all(siv: &mut Cursive) {
     SHOULD_WE_SAVE.store(true, Ordering::Relaxed); //I have no idea if this is the correct ordering
     siv.quit();
 }
 
-/// return None if we do not want to save the date
+/// Returns papers that are where selected for download. We return None if we do not want to save the date.
 pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
     let mut siv = Cursive::new();
     let mut table = TableView::<Paper, BasicColumn>::new()
@@ -80,11 +82,8 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
             .button("Quit", button_quit)
     );
 
-    //pb.finish_and_clear();
-    
     siv.run();
 
-    //returning elements that are left in the table
     let val = siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
         table.take_items()
     }).unwrap();

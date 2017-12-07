@@ -18,6 +18,7 @@ static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/fi
 static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";
 static DIRECTORY_NAME: &'static str = "TheoryGrabber";
 
+/// The response to a file create query.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FileCreateResponse {
@@ -27,6 +28,7 @@ struct FileCreateResponse {
     mime_type: String,
 }
 
+/// Json for uploading a file.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FileUploadJSON {
@@ -34,7 +36,8 @@ struct FileUploadJSON {
     mime_type: String,
     parents: Vec<String>
 } 
-    
+
+/// Setups the oauth authentication or retrives the current token from the token storage.
 pub fn setup_oauth2() -> Result<oauth2::Token> {
     let f = File::open("client_secret.json").expect("Did not find client_secret.json");
     let pre_secret = json::from_reader::<File, ConsoleApplicationSecret>(f).map(|s| s.installed)?;
@@ -67,6 +70,7 @@ pub fn setup_oauth2() -> Result<oauth2::Token> {
     }
 }
 
+/// Returns the initial of the last name of an author.
 fn get_last_name_initials(author: &str) -> char {
     let lastname = author.split_whitespace().nth(1).expect(
         "No lastname found?",
@@ -74,6 +78,7 @@ fn get_last_name_initials(author: &str) -> char {
     lastname.chars().next().unwrap()
 }
 
+/// Returns the author string we will use. Uses `get_last_name_initials`.
 fn author_string(paper: &Paper) -> String {
     paper
         .authors
@@ -84,6 +89,7 @@ fn author_string(paper: &Paper) -> String {
         .to_uppercase()
 }
 
+/// Returns the filename we will save as for a given filename.
 fn make_filename(paper: &Paper) -> String {
     let datestring = paper.published.format("%Y-%m-%d");
     let mut title = paper.title.clone();
@@ -92,8 +98,7 @@ fn make_filename(paper: &Paper) -> String {
     datestring.to_string() + "-" + &author_string(paper) + "-" + &title + ".pdf"
 }
 
-//do progress bar
-
+/// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
 pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
     let client = reqwest::Client::new();
     let mut header = Headers::new();
@@ -115,6 +120,9 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
     Ok(())
 }
 
+/// Uploads a file to google drive to the directory given by `fileid`.
+/// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
+/// Currently we do not support resuming a broken upload and just error out.
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -> Result<()> {
     //getting the proper resumeable session URL
     let client = reqwest::Client::new();

@@ -10,9 +10,9 @@ use cursive::traits::View;
 use types::{BasicColumn, Paper, print_authors};
 
 
-//This is just taking some keyboard shortcuts and make them something
-//if you want to understand what I am doing look at View on_event and
-//we impl Dialog because we need some setup procedure.
+///This is just taking some keyboard shortcuts and make them something
+///if you want to understand what I am doing look at View on_event and
+///we impl Dialog because we need some setup procedure.
 
 pub struct PaperDialog {
     d: Dialog,
