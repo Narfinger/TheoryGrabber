@@ -85,8 +85,7 @@ fn filter_test() {
 /// not publish on weekends.  For all other days, the following could
 /// occur. Arxiv publishes at (for example) UTC 00:00. Papers that are
 /// submitted at UTC 01:00 are not included. If we check at UTC 02:00,
-/// we lose these papers as we filter with UTC>= 02:00. We use
-/// 'special_filter'.
+/// we lose these papers as we filter with UTC>= 02:00.
 fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
     match p.source {
         Source::ECCC => p.published >= date,
@@ -108,7 +107,7 @@ fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
 
 /// Filters papers.
 /// Arxiv needs a special filtering as there could be following occurence.
-/// Arxiv publishes at (for example) UTC 00:00. Papers that are submitted  at UTC 01:00 are not included. If we check at UTC 02:00, we lose these papers as we filter with UTC>= 02:00. We use 'special_filter'.
+/// Arxiv publishes at (for example) UTC 00:00. Papers that are submitted  at UTC 01:00 are not included. If we check at UTC 02:00, we lose these papers as we filter with UTC>= 02:00. We use `special_filter`.
 pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
     paper
         .into_iter()
