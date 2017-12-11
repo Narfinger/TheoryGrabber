@@ -2,8 +2,8 @@ use chrono;
 use chrono::TimeZone;
 use errors::*;
 use std::fs::File;
-use std::io::Write;
-use serde_yaml;
+use std::io::{Read, Write};
+use toml;
 
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize)]
@@ -16,15 +16,20 @@ struct Config {
 
 /// Reads the config file and returns the struct.
 fn read_config_file() -> Result<Config> {
-    let file = File::open("config.yaml")?;
-    serde_yaml::from_reader::<File, Config>(file).chain_err(|| "Couldn't parse")
+    let mut file = File::open("config.toml")?;
+    let mut s = String::new();
+    file.read_to_string(&mut s)?;
+    toml::from_str::<Config>(&s).chain_err(|| "Couldn't parse")
 }
 
 /// writes the config file to the current directory config.yaml.
 fn write_config_file(c: &Config) -> Result<()> {
-    let mut file = File::create("config.yaml")?;
-    let st = serde_yaml::to_string(&c)?;
-    file.write_all(st.as_bytes()).chain_err(|| "Cannot write")
+    let mut file = File::create("config.toml")?;
+    let st = toml::to_string(&c);
+    if st.is_err() {
+        return Err("Could not parse toml".into());
+    }
+    file.write_all(st.unwrap().as_bytes()).chain_err(|| "Cannot write")
 }
 
 /// Read config time from config file.

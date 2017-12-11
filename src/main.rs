@@ -12,10 +12,10 @@ extern crate reqwest;
 extern crate rayon;
 extern crate select;
 extern crate serde_json;
-extern crate serde_yaml;
 #[macro_use]
 extern crate serde_derive;
 extern crate tempdir;
+extern crate toml;
 extern crate url;
 extern crate quick_xml;
 extern crate hyper;
@@ -29,7 +29,6 @@ mod errors {
     error_chain!{
         foreign_links {
             Io(::std::io::Error);
-            Serde(::serde_yaml::Error);
             SerdeJson(::serde_json::Error);
             Reqwest(::reqwest::Error);
             Nom(::nom::ErrorKind);
