@@ -1,6 +1,5 @@
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
 #![recursion_limit="128"]
+extern crate clap;
 extern crate chrono;
 extern crate chrono_tz;
 extern crate cursive;
@@ -44,6 +43,7 @@ pub mod gui;
 pub mod paper_dialog;
 pub mod types;
 
+use clap::{Arg, App};
 use errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::thread;
@@ -113,20 +113,26 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     Ok(papers_filtered)
 }
 
+fn setup() -> Result<(oauth2::Token, String)> {
+    let tk = drive::setup_oauth2()?;
+    let directory_id = if let Ok(id) = config::read_directory_id() {
+        id
+    } else {
+        let id = drive::create_directory(&tk)?;
+        config::write_directory_id_and_now(id.clone())?;
+        id
+    };
+    
+    Ok((tk, directory_id))
+}
 
 fn run() -> Result<()> {
     println!("Ideas for improvement:");
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
     
-    let tk = drive::setup_oauth2()?;
-    let directory_id = if let Ok(id) = config::read_directory_id() {
-        id
-    } else {
-        drive::create_directory(&tk)?;
-        config::read_directory_id()?
-    };
-
+    let (tk, directory_id) = setup()?;
+    
     let filtered_papers = get_and_filter_papers()?;
 
     if filtered_papers.is_empty() {
@@ -171,6 +177,25 @@ fn run() -> Result<()> {
 }
 
 fn main() {
+    let matches = App::new("TheoryGrabber")
+        .version("0.8.0")
+        .author("Narfinger")
+        .about("Grabs ArXiv and ECCC papers, lists them, downloads them and uploads them to a folder in Google Drive.")
+        .arg(Arg::with_name("clean")
+             .short("c")
+             .long("clean")
+             .help("Sets the current date as a date in the config. This is should only be used before the first download \
+                    to not make you go through papers you already know."))
+        .get_matches();
+    
+    if matches.is_present("clean") {
+        let res = setup();
+        if res.is_err() {
+            println!("Could not write file, something is wrong.");
+        }
+        return;
+    }
+    
     if let Err(ref e) = run() {
         use std::io::Write;
         let stderr = &mut ::std::io::stderr();

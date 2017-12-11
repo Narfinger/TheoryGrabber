@@ -219,9 +219,8 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let div = parsedoc.find(And(Name("div"),Attr("id", "box"))).nth(0).unwrap();
 
     let id_and_date_text = div.children().nth(1).unwrap().text();
-    
-    //format is TR17-177 | 16th November 2017 04:24, we skip the id part and add back the whitespaces
-    let date_string = id_and_date_text.split_whitespace().skip(2).take(4).fold(String::from(""), |acc, x| acc + " " + x);
+    //format is TR17-177 | 16th November 2017 04:24 \n\n {Title}, we skip the id part and add back the whitespaces
+    let date_string = id_and_date_text.split('|').nth(1).unwrap().split_whitespace().take(4).fold(String::from(""), |acc, x| acc + " " + x);
     let date = parse_date(&date_string).unwrap();
 
     let url_string = p.details_link.to_owned() + "/download";

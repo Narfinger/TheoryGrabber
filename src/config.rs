@@ -61,14 +61,15 @@ pub fn read_directory_id() -> Result<String> {
     Ok(c.directory_id)
 }
 
-/// Writes the current id to the config file. If the file does not exists, we create it with default time and the given directory id.
+/// Writes the current id to the config file. If the file does not exists, we abort and do not write.
 pub fn write_directory_id(id: String) -> Result<()> {
-    let mut c: Config =
-        if let Ok(c) = read_config_file() {
-            c
-        } else {
-            Config { last_checked: read_config_time_or_default(), directory_id: String::from("") }
-        };
+    let mut c: Config = read_config_file()?;
     c.directory_id = id;
+    write_config_file(&c)
+}
+
+///  Writes the current id to the config file. If the file does not exists, we create it with default time and the given directory id.
+pub fn write_directory_id_and_now(id: String) -> Result<()> {
+    let c: Config = Config { last_checked: chrono::Utc::now(), directory_id: id };
     write_config_file(&c)
 }

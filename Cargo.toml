@@ -1,9 +1,10 @@
 [package]
 name = "theory_grabber"
-version = "0.1.0"
+version = "0.8.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 
 [dependencies]
+clap = "2.29"               # A simple to use, efficient, and full featured  Command Line Argument Parser 
 chrono = {version = "0.4", features = ["serde"]}              # Date and time library for Rust
 chrono-tz = "0.4"         # TimeZone implementations for rust-chrono from the IANA database
 cursive = "0.7"            # A TUI (Text User Interface) library focused on ease-of-use.

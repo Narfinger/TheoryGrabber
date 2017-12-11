@@ -11,7 +11,6 @@ use std::fs::File;
 use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer};
 use serde_json as json;
-use config::write_directory_id;
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -99,7 +98,7 @@ fn make_filename(paper: &Paper) -> String {
 }
 
 /// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
-pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
+pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
     let client = reqwest::Client::new();
     let mut header = Headers::new();
 
@@ -115,9 +114,8 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<()> {
         .send().chain_err(|| "Error in sending to create directory")?;
     
     let response: FileCreateResponse = res.json().chain_err(|| "Error in decoding Response")?;
-    write_directory_id(response.id)?;
 
-    Ok(())
+    Ok(response.id)
 }
 
 /// Uploads a file to google drive to the directory given by `fileid`.
