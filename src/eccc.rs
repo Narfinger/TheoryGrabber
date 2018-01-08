@@ -103,8 +103,18 @@ fn date_parse_test() {
 }
 
 /// The url we should look at. This is kind of rough as we just use the current year, hoping that nobody publishes around new year.
-fn get_url() -> String {
-    ECCC.to_string() + &Utc::now().year().to_string() + "/"
+fn get_url() -> Vec<String> {
+    let mut years = Vec::new();
+    let now = Utc::now().year();
+
+    if let Ok(s) = config::read_config_time() {
+        if s.year() != now {
+            years.push(ECC.to_string() + s.year() + "/");
+        }
+    }
+    years.push(ECCC.to_string() + &Utc::now().year().to_string() + "/");
+
+    years
 }
 
 /// This extracts the authors.
