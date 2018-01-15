@@ -11,6 +11,7 @@ use rayon::prelude::*;
 use select::document::Document;
 use select::predicate::{Attr, And, Name};
 use select::node::Node;
+use config;
 use url;
 use types::{Source, Paper};
 
@@ -107,10 +108,9 @@ fn get_url() -> Vec<String> {
     let mut years = Vec::new();
     let now = Utc::now().year();
 
-    if let Ok(s) = config::read_config_time() {
-        if s.year() != now {
-            years.push(ECC.to_string() + s.year() + "/");
-        }
+    let s = config::read_config_time_or_default();
+    if s.year() != now {
+        years.push(ECCC.to_string() + &format!("{}", s.year()) + "/");
     }
     years.push(ECCC.to_string() + &Utc::now().year().to_string() + "/");
 
@@ -201,18 +201,23 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 
 /// Parses the year summary page.
 fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
-    let mut res = reqwest::get(get_url().as_str()).chain_err(|| "Can't get eccc")?;
-    if !res.status().is_success() {
-        return Err("Some error in getting the reqwuest".into());
-    } 
-    
-    let mut res_string = String::new();
-    res.read_to_string(&mut res_string)?;
-    
-    let parsedoc = Document::from(res_string.as_str());
-    let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
+    let strings = get_url();
+    let res = strings.iter().flat_map(|i| {
+        let mut res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
+        if !res.status().is_success() {
+            return Err("Some error in getting the reqwuest".into());
+        } 
         
-    divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()    
+        let mut res_string = String::new();
+        res.read_to_string(&mut res_string)?;
+        
+        let parsedoc = Document::from(res_string.as_str());
+        let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
+        
+        divs.map(parse_single_div)   //type: Vec<Result<RoughPaper>> (actually iterator over the vector)
+    }).collect::<Vec<Result<RoughPaper>>>(); //type: Vec<Result<RoughPaper>>
+
+    res.iter().collect()
 }
 
 /// Function that queries and parses the details page for a given `RoughPaper`.
