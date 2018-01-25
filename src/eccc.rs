@@ -105,16 +105,12 @@ fn date_parse_test() {
 
 /// The url we should look at. This is kind of rough as we just use the current year, hoping that nobody publishes around new year.
 fn get_url() -> Vec<String> {
-    let mut years = Vec::new();
     let now = Utc::now().year();
-
     let s = config::read_config_time_or_default();
-    if s.year() != now {
-        years.push(ECCC.to_string() + &format!("{}", s.year()) + "/");
-    }
-    years.push(ECCC.to_string() + &Utc::now().year().to_string() + "/");
-
-    years
+    
+    (s.year() .. now+1).into_iter().map(|cy| {
+        format!("{}{:?}/", ECCC.to_string(), cy)
+    }).collect::<Vec<String>>()
 }
 
 /// This extracts the authors.
@@ -200,24 +196,29 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 }
 
 /// Parses the year summary page.
+/// This function needs a major overhau las how we handle vectors is really rough
 fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let strings = get_url();
-    let res = strings.iter().flat_map(|i| {
+    let res = strings.iter().map(|i| {
         let mut res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
         if !res.status().is_success() {
             return Err("Some error in getting the reqwuest".into());
         } 
-        
-        let mut res_string = String::new();
-        res.read_to_string(&mut res_string)?;
-        
-        let parsedoc = Document::from(res_string.as_str());
+        let parsedoc = Document::from_read(res)?;
         let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
-        
-        divs.map(parse_single_div)   //type: Vec<Result<RoughPaper>> (actually iterator over the vector)
-    }).collect::<Vec<Result<RoughPaper>>>(); //type: Vec<Result<RoughPaper>>
 
-    res.iter().collect()
+        //Vec<Result<Vec<Result>>> is the corresponding type structure, a bit
+        divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()   //type: Vec<Result<RoughPaper>> (actually iterator over the vector)  
+    });
+
+
+    let array = res.collect::<Result<Vec<Vec<RoughPaper>>>>()?;
+    let mut res = Vec::new();
+    for mut i in array {
+        res.append(&mut i);
+    }
+
+    Ok(res)
 }
 
 /// Function that queries and parses the details page for a given `RoughPaper`.
