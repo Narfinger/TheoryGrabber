@@ -53,7 +53,7 @@ use std::path::Path;
 use types::{DownloadedPaper, Paper};
 use tempdir::TempDir;
 
-/// Downloads the papers to the TempDir.
+/// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
     let mut files: Vec<DownloadedPaper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);

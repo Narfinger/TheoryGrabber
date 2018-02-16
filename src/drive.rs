@@ -1,13 +1,10 @@
 use errors::*;
 use oauth2;
-use std;
 use std::collections::HashMap;
 use std::fs::File;
 use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer};
-use serde_json as json;
 use types::Paper;
-use drive_oauth;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
 static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";

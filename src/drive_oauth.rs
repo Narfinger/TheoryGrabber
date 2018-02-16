@@ -4,11 +4,11 @@ use oauth2;
 use url::Url;
 use chrono::{DateTime,Duration, Utc};
 use reqwest;
-use std::error::Error;
 use std::fs::File;
 use std::net::TcpListener;
 use std::io::{BufRead, BufReader, Write};
 
+/// Represents a token and the date it was created
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Token {
     pub tk: oauth2::Token,
@@ -44,6 +44,7 @@ fn get_client_secrets() -> Installed {
     json::from_reader::<File, ClientSecret>(f).unwrap().installed
 }
 
+/// Initital authorization to get the token
 fn authorize() -> Result<oauth2::Token> {
     let secret = get_client_secrets();
     let mut config = oauth2::Config::new(secret.client_id, secret.client_secret, secret.auth_uri, secret.token_uri);    
@@ -84,6 +85,7 @@ fn authorize() -> Result<oauth2::Token> {
     config.exchange_code(code).map_err(|e| e.into())
 }
 
+/// Refreshes a token with the saved (`oldtocken`) refresh token
 fn refresh(oldtoken: &Token) -> Result<Token> {
     let secret = get_client_secrets();
     let params = [("refresh_token", oldtoken.tk.refresh_token.clone().unwrap()), 
@@ -108,6 +110,7 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
     Ok(Token { created: Utc::now(), tk: newtk })
 }
 
+/// Gets the oauth2 token, either saved in tk.json or creates a new. if not current, refreshes it
 pub fn setup_oauth() -> Result<oauth2::Token> {
     let f = File::open("tk.json");
     let tk = if let Ok(f) = f {
