@@ -48,7 +48,7 @@ fn get_client_secrets() -> Installed {
 fn authorize() -> Result<oauth2::Token> {
     let secret = get_client_secrets();
     let mut config = oauth2::Config::new(secret.client_id, secret.client_secret, secret.auth_uri, secret.token_uri);    
-    config = config.add_scope("https://www.googleapis.com/auth/youtube");
+    config = config.add_scope("https://www.googleapis.com/auth/drive.file");
     config = config.set_redirect_url("http://localhost:8080");
     let authorize_url = config.authorize_url();
     println!("Open this URL in your browser:\n{}\n", authorize_url.to_string());
@@ -93,7 +93,7 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
                     ("client_secret", secret.client_secret),
                     ("grant_type", String::from("refresh_token"))];
     let client = reqwest::Client::new();
-    let res = client.post("https://www.googleapis.com/auth/drive.file")
+    let res = client.post("https://www.googleapis.com/oauth2/v4/token")
         .form(&params)
         .send()?;
     #[derive(Deserialize)]
