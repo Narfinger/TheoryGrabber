@@ -1,10 +1,5 @@
 use errors::*;
-use hyper;
-use hyper::net::HttpsConnector;
-use hyper_rustls;
 use oauth2;
-use oauth2::{Authenticator, DefaultAuthenticatorDelegate, ConsoleApplicationSecret,
-             DiskTokenStorage, GetToken, FlowType};
 use std;
 use std::collections::HashMap;
 use std::fs::File;
@@ -12,6 +7,7 @@ use reqwest;
 use reqwest::header::{Headers, Authorization, Bearer};
 use serde_json as json;
 use types::Paper;
+use drive_oauth;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
 static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";
@@ -35,39 +31,6 @@ struct FileUploadJSON {
     mime_type: String,
     parents: Vec<String>
 } 
-
-/// Setups the oauth authentication or retrives the current token from the token storage.
-pub fn setup_oauth2() -> Result<oauth2::Token> {
-    let f = File::open("client_secret.json").expect("Did not find client_secret.json");
-    let pre_secret = json::from_reader::<File, ConsoleApplicationSecret>(f).map(|s| s.installed)?;
-    if let Some(secret) = pre_secret { 
-        let mut cwd = std::env::current_dir()?;
-        cwd.push("tk");
-        let cwd: String = String::from(cwd.to_str().expect("string conversion error"));
-        let ntk = DiskTokenStorage::new(&cwd)?;
-        
-        //let mut core = tokio_core::reactor::Core::new().unwrap();
-        //let handle = core.handle();
-        
-        //let client = HttpsConnector::new(2,&handle);
-        let client = hyper::Client::with_connector(HttpsConnector::new(hyper_rustls::TlsClient::new()));
-        let realtk = Authenticator::new(
-            &secret,
-            DefaultAuthenticatorDelegate,
-            client,
-            ntk,
-            Some(FlowType::InstalledInteractive),
-        ).token(&["https://www.googleapis.com/auth/drive.file"]);
-        
-        if let Ok(s) = realtk {
-            Ok(s)
-        } else {
-            Err("Error getting token".into())
-        }
-    } else {
-        Err("Error getting token".into())
-    }
-}
 
 /// Returns the initial of the last name of an author.
 fn get_last_name_initials(author: &str) -> char {

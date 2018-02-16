@@ -200,7 +200,7 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let strings = get_url();
     let res = strings.iter().map(|i| {
-        let mut res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
+        let res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
         if !res.status().is_success() {
             return Err("Some error in getting the reqwuest".into());
         } 

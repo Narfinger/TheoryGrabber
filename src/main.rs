@@ -17,12 +17,10 @@ extern crate tempdir;
 extern crate toml;
 extern crate url;
 extern crate quick_xml;
-extern crate hyper;
-extern crate hyper_rustls;
 #[macro_use]
 extern crate nom;
 extern crate tokio_core;
-extern crate yup_oauth2 as oauth2;
+extern crate oauth2;
 
 mod errors {
     error_chain!{
@@ -31,6 +29,7 @@ mod errors {
             SerdeJson(::serde_json::Error);
             Reqwest(::reqwest::Error);
             Nom(::nom::ErrorKind);
+            Oauth2Error(::oauth2::TokenError);
         }
     }
 }
@@ -41,6 +40,7 @@ pub mod drive;
 pub mod eccc;
 pub mod gui;
 pub mod paper_dialog;
+pub mod drive_oauth;
 pub mod types;
 
 use clap::{Arg, App};
@@ -114,7 +114,7 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
 }
 
 fn setup() -> Result<(oauth2::Token, String)> {
-    let tk = drive::setup_oauth2()?;
+    let tk = drive_oauth::setup_oauth()?;
     let directory_id = if let Ok(id) = config::read_directory_id() {
         id
     } else {
