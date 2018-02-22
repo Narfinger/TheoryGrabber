@@ -163,7 +163,7 @@ fn run() -> Result<()> {
                 let f = File::open(i.path.clone()).chain_err(
                     || "File couldn't be opened",
                 )?;
-                drive::upload_file(&tk, f, i.paper, directory_id.clone()).chain_err(
+                drive::upload_file(&tk, f, i.paper, &directory_id).chain_err(
                     || "Uploading function has error",
                 )?;
             }

@@ -80,22 +80,22 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 }
 /// Tries to resume an upload if an error happened
 /// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
-/// See: https://developers.google.com/drive/v3/web/resumable-upload#resume-upload
-fn resume_upload(loc: String, mut f: File, h: &Headers) -> Result<()> {
+/// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
+fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
     let client = reqwest::Client::new();
     let mut header = h.clone();
     header.set(ContentRange(ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
-    let res = client.put(&loc).send()?;
+    let res = client.put(loc).send()?;
     
     if (res.status() == reqwest::StatusCode::Ok) | (res.status() == reqwest::StatusCode::Created) {
         Ok(())
     } else if res.status() == reqwest::StatusCode::NotFound {
         Err("Upload url not found, something is wrong".into())
     } else if res.status() == reqwest::StatusCode::PermanentRedirect {
-        if let Some(ref ct) = res.headers().get::<reqwest::header::ContentRange>() {
+        if let Some(ct) = res.headers().get::<reqwest::header::ContentRange>() {
             let p = ct.0.clone();
             match p {
-                reqwest::header::ContentRangeSpec::Bytes{range: x, instance_length: _} => {
+                reqwest::header::ContentRangeSpec::Bytes{range: x, ..} => {
                     if let Some((from, to)) = x {
                         f.seek(SeekFrom::Start(0))?;
                         let mut slices = vec![0u8; (to as usize) - (from as usize) ];
@@ -129,7 +129,7 @@ fn resume_upload(loc: String, mut f: File, h: &Headers) -> Result<()> {
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
 /// Currently we do not support resuming a broken upload and just error out.
-pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -> Result<()> {
+pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> Result<()> {
     //getting the proper resumeable session URL
     let client = reqwest::Client::new();
     let mut header = Headers::new();
@@ -141,7 +141,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -
     let metadata = FileUploadJSON {
         name: filename,
         mime_type: "application/pdf".to_string(),
-        parents: vec![fileid.clone()],
+        parents: vec![String::from(fileid)],
     };
     
     let query = client
@@ -165,7 +165,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -
             if upload_res.is_ok() { 
                 Ok(()) 
             } else {
-                resume_upload(loc.to_string(), fclone, &header)
+                resume_upload(loc, fclone, &header)
             }
                            
         } else {
