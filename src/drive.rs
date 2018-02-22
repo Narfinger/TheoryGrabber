@@ -2,8 +2,9 @@ use errors::*;
 use oauth2;
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
 use reqwest;
-use reqwest::header::{Headers, Authorization, Bearer};
+use reqwest::header::{Headers, ContentRange, Authorization, Bearer, ContentRangeSpec};
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -77,6 +78,53 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 
     Ok(response.id)
 }
+/// Tries to resume an upload if an error happened
+/// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
+/// See: https://developers.google.com/drive/v3/web/resumable-upload#resume-upload
+fn resume_upload(loc: String, mut f: File, h: &Headers) -> Result<()> {
+    let client = reqwest::Client::new();
+    let mut header = h.clone();
+    header.set(ContentRange(ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
+    let res = client.put(&loc).send()?;
+    
+    if (res.status() == reqwest::StatusCode::Ok) | (res.status() == reqwest::StatusCode::Created) {
+        Ok(())
+    } else if res.status() == reqwest::StatusCode::NotFound {
+        Err("Upload url not found, something is wrong".into())
+    } else if res.status() == reqwest::StatusCode::PermanentRedirect {
+        if let Some(ref ct) = res.headers().get::<reqwest::header::ContentRange>() {
+            let p = ct.0.clone();
+            match p {
+                reqwest::header::ContentRangeSpec::Bytes{range: x, instance_length: _} => {
+                    if let Some((from, to)) = x {
+                        f.seek(SeekFrom::Start(0))?;
+                        let mut slices = vec![0u8; (to as usize) - (from as usize) ];
+                        f.read_exact(&mut slices)?;
+
+                        let res = client
+                            .put(&loc.to_string())
+                            .headers(h.clone())
+                            .body(slices)
+                            .send();
+                            if res.is_ok() {
+                                Ok(())
+                            } else {
+                                Err("We tried one resume and we could not finish".into())
+                            }
+                    } else {
+                        Err("content range spec could not work".into())
+                    }
+                },
+                _ => Err("Problem matching content header".into()),
+            }
+        } else {
+            Err("Could not find Content Range header".into())
+        }
+    } else {
+        Err("Unknown response returned".into())
+    }
+
+}
 
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
@@ -93,7 +141,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -
     let metadata = FileUploadJSON {
         name: filename,
         mime_type: "application/pdf".to_string(),
-        parents: vec![fileid],
+        parents: vec![fileid.clone()],
     };
     
     let query = client
@@ -108,13 +156,18 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: String) -
 
     if res.status().is_success() {
         if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
-            client
-                .put(&loc.to_string())
-                .headers(header)
-                .body(f)
-                .send()
-                .chain_err(|| "Error in uploading file to resumeable url")?;
-            Ok(())
+            let fclone = f.try_clone().unwrap();
+            let upload_res =  client
+                                .put(&loc.to_string())
+                                .headers(header.clone())
+                                .body(f)
+                                .send();
+            if upload_res.is_ok() { 
+                Ok(()) 
+            } else {
+                resume_upload(loc.to_string(), fclone, &header)
+            }
+                           
         } else {
             Err("no location header found".into())
         }
