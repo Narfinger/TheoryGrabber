@@ -28,7 +28,6 @@ mod errors {
             Io(::std::io::Error);
             SerdeJson(::serde_json::Error);
             Reqwest(::reqwest::Error);
-            Nom(::nom::ErrorKind);
             Oauth2Error(::oauth2::TokenError);
         }
     }
@@ -71,7 +70,7 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
             .with_extension("pdf");
         let savefile = dir.path().join(filename);
         //        println!("{:?}",savefile);
-        let mut file = File::create(savefile.clone()).unwrap();
+        let mut file = File::create(savefile.clone())?;
         copy(&mut response, &mut file)?;
 
         files.push(DownloadedPaper {

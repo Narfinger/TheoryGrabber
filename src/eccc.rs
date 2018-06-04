@@ -1,6 +1,7 @@
 use chrono::{Datelike, DateTime, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
 use errors::*;
+use std;
 use std::io::Read;
 use std::str::{FromStr,from_utf8};
 use reqwest;
@@ -19,8 +20,16 @@ static ECCC: &'static str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &'static str = "https://eccc.weizmann.ac.il";
 
 ///eccc has a custom format chrono cannot parse, so we build a parser with nom
-named!(number<u32>, map_res!(map_res!(digit,from_utf8), FromStr::from_str) );
-named!(eccc_rough_day <&[u8], u32>, do_parse!(v: number >> alt!(tag!("st") | alt!(tag!("nd") | tag!("rd") | tag!("th"))) >> (v)) );
+
+named!(
+    number<u32>,
+    map_res!(
+      map_res!(digit, std::str::from_utf8),
+      |s: &str| s.parse::<u32>()
+    )
+);
+//named!(number<u32>, map_res!(map_res!(digit,from_utf8), FromStr::from_str) );
+named!(eccc_rough_day <&[u8], u32>, do_parse!(v: number >> alt!(tag!("st") | tag!("nd") | tag!("rd") | tag!("th")) >> (v)) );
 named!(eccc_rough_month <&[u8], u32>, alt!(
     tag!("January")   => {|_| 1 } |
     tag!("February")  => {|_| 2 } |
@@ -34,22 +43,24 @@ named!(eccc_rough_month <&[u8], u32>, alt!(
     tag!("October")   => {|_| 10 } |
     tag!("November")  => {|_| 11 } |
     tag!("December")  => {|_| 12 }));
+
 named!(eccc_rough_year <&[u8], u32>, do_parse!(v: number >> (v)));
-named!(eccc_rough_date   <&[u8],NaiveDate>, do_parse!(
+named!(eccc_rough_date <&[u8], NaiveDate>, do_parse!(
     day: eccc_rough_day >>
         tag!(" ") >>
         month: eccc_rough_month >>
         tag!(" ") >>
-        year: eccc_rough_year >>
+        year: number >>
     (NaiveDate::from_ymd(year as i32, month, day))));
 
 /// Parses a date from the overview page.
 fn parse_rough_date(t: &str) -> Result<NaiveDate> {
-    let st = t.trim();
-    if let Ok(s) = eccc_rough_date(st.as_bytes()).to_result() {
+    let st = t.trim().to_owned() + " ";
+    let res = eccc_rough_date(st.as_bytes());
+    if let Ok((_, s)) = res {
         Ok(s)
     } else {
-        Err("Error parsing rough date".into())
+        Err(format!("Error parsing rough date from string \"{}\"\n with error {:?}", &st, res).into())
     }
 }
 
@@ -67,12 +78,16 @@ named!(eccc_date_time<&[u8],NaiveDateTime>, do_parse!(
 
 /// This uses Israel Standard time at the moment. This might change when eccc moves.
 fn parse_date(t: &str) -> Result<DateTime<Utc>> {
-    let st = t.trim();
-    let naive = eccc_date_time(st.as_bytes()).to_result()?;
-    if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
-        Ok(israel.with_timezone(&Utc))
+    let st = t.trim().to_owned() + " ";
+    let res = eccc_date_time(st.as_bytes());
+    if let Ok((_, naive)) = res {
+        if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
+            Ok(israel.with_timezone(&Utc))
+        } else {
+            Err("timezone conversion failed".into())
+        }
     } else {
-        Err("timezone conversion failed".into())
+        Err(format!("error in parsing date from \"{}\" with error {:?}", st, res).into())
     }
 }
 

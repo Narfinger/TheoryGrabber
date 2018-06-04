@@ -82,35 +82,41 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 /// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
 fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
+    println!("Starting resume upload");
     let client = reqwest::Client::new();
     let mut header = h.clone();
     header.set(ContentRange(ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
     let res = client.put(loc).send()?;
-    
+    println!("Send put request");
     if (res.status() == reqwest::StatusCode::Ok) | (res.status() == reqwest::StatusCode::Created) {
         Ok(())
     } else if res.status() == reqwest::StatusCode::NotFound {
         Err("Upload url not found, something is wrong".into())
     } else if res.status() == reqwest::StatusCode::PermanentRedirect {
+        println!("Getting correct status code");
         if let Some(ct) = res.headers().get::<reqwest::header::ContentRange>() {
+            println!("Getting target range");
             let p = ct.0.clone();
             match p {
                 reqwest::header::ContentRangeSpec::Bytes{range: x, ..} => {
                     if let Some((from, to)) = x {
+                        println!("Seeking the file back");
                         f.seek(SeekFrom::Start(0))?;
+                        println!("Getting slices");
                         let mut slices = vec![0u8; (to as usize) - (from as usize) ];
                         f.read_exact(&mut slices)?;
-
+                        println!("Sending upload request");
                         let res = client
                             .put(&loc.to_string())
                             .headers(h.clone())
                             .body(slices)
                             .send();
-                            if res.is_ok() {
-                                Ok(())
-                            } else {
-                                Err("We tried one resume and we could not finish".into())
-                            }
+                        println!("Upload request sent");
+                        if res.is_ok() {
+                            Ok(())
+                        } else {
+                            Err("We tried one resume and we could not finish".into())
+                        }
                     } else {
                         Err("content range spec could not work".into())
                     }
