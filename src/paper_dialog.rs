@@ -45,7 +45,7 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
         .child(TextView::new(value.description.clone()));
     let dialog = Dialog::around(nd)
         .title(format!("Details row # {}", row))
-        .button("Next", move |s| {
+        /*.button("Next", move |s| {
             //this is kind of hacky
             s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
                 //this is technically not correct as index+1 is in the unsorted view, while we look in the sorted one
@@ -53,7 +53,7 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
             });
             s.pop_layer();
             //s.on_event(cursive::event::Event::Key(cursive::event::Key::Enter));
-        })
+        })*/
         .button("Delete", move |s| {
             s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
                 table.remove_item(index);

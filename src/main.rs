@@ -63,14 +63,15 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     progressbar.enable_steady_tick(100);
 
     for i in progressbar.wrap_iter(papers.iter()) {
-        let sanitized_title = i.title.replace("\n", "").replace("  ", " ");
+        let sanitized_title = i.title.replace("\n", "").replace("  ", " ").replace(std::path::MAIN_SEPARATOR, "");
         let mut response = reqwest::get(i.link.clone())?;
         let filename = Path::new("")
             .with_file_name(sanitized_title)
             .with_extension("pdf");
-        let savefile = dir.path().join(filename);
+        let savefile = dir.path().join(&filename);
         //        println!("{:?}",savefile);
-        let mut file = File::create(savefile.clone())?;
+        let mut file = File::create(savefile.clone())
+            .chain_err(|| format!("Error in file with filename: {:?}, savefile: {:?}", filename.clone(), savefile.clone()))?;
         copy(&mut response, &mut file)?;
 
         files.push(DownloadedPaper {
