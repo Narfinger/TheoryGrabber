@@ -1,4 +1,5 @@
 #![recursion_limit="128"]
+#[macro_use]
 extern crate clap;
 extern crate chrono;
 extern crate chrono_tz;
@@ -178,7 +179,7 @@ fn run() -> Result<()> {
 
 fn main() {
     let matches = App::new("TheoryGrabber")
-        .version("0.8.0")
+        .version(crate_version!())
         .author("Narfinger")
         .about("Grabs ArXiv and ECCC papers, lists them, downloads them and uploads them to a folder in Google Drive.")
         .arg(Arg::with_name("clean")
