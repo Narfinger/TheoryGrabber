@@ -1,9 +1,11 @@
+use app_dirs::*;
 use chrono;
 use chrono::TimeZone;
 use errors::*;
 use std::fs::File;
 use std::io::{Read, Write};
 use toml;
+use types::APP_INFO;
 
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize)]
@@ -16,7 +18,9 @@ struct Config {
 
 /// Reads the config file and returns the struct.
 fn read_config_file() -> Result<Config> {
-    let mut file = File::open("config.toml")?;
+    let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+    path.push("config.toml");
+    let mut file = File::open(path)?;
     let mut s = String::new();
     file.read_to_string(&mut s)?;
     toml::from_str::<Config>(&s).chain_err(|| "Couldn't parse")
@@ -24,7 +28,9 @@ fn read_config_file() -> Result<Config> {
 
 /// writes the config file to the current directory config.yaml.
 fn write_config_file(c: &Config) -> Result<()> {
-    let mut file = File::create("config.toml")?;
+    let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+    path.push("config.toml");
+    let mut file = File::create(path)?;
     let st = toml::to_string(&c);
     if st.is_err() {
         return Err("Could not parse toml".into());

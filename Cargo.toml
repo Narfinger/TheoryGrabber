@@ -4,6 +4,7 @@ version = "0.8.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 
 [dependencies]
+app_dirs = "1.2"         # Put your app's data in the right place on every platform
 clap = "2.31"               # A simple to use, efficient, and full featured  Command Line Argument Parser 
 chrono = {version = "0.4", features = ["serde"]}              # Date and time library for Rust
 chrono-tz = "0.4"         # TimeZone implementations for rust-chrono from the IANA database

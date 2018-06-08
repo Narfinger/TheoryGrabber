@@ -1,3 +1,4 @@
+use app_dirs::*;
 use chrono;
 use chrono::Weekday;
 use chrono_tz::America::New_York;
@@ -9,6 +10,8 @@ use chrono::Duration;
 use url;
 #[cfg(test)]
 use chrono::Utc;
+
+pub const APP_INFO: AppInfo = AppInfo{name: "TheoryGrabber", author: "Narfinger"};
 
 
 /// Shows where the paper came from.
