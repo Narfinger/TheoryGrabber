@@ -1,4 +1,5 @@
 #![recursion_limit="128"]
+extern crate app_dirs;
 #[macro_use]
 extern crate clap;
 extern crate chrono;

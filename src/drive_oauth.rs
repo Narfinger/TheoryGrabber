@@ -7,6 +7,8 @@ use reqwest;
 use std::fs::File;
 use std::net::TcpListener;
 use std::io::{BufRead, BufReader, Write};
+use app_dirs::*;
+use types::APP_INFO;
 
 /// Represents a token and the date it was created
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,8 +42,8 @@ fn get_client_secrets() -> Installed {
     struct ClientSecret {
         installed: Installed,
     };
-    let f = File::open("client_secret.json").expect("Did not find client_secret.json");
-    json::from_reader::<File, ClientSecret>(f).unwrap().installed
+    let f = include_str!("../client_secret.json");
+    json::from_str::<ClientSecret>(f).unwrap().installed
 }
 
 /// Initital authorization to get the token
@@ -112,12 +114,14 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
 
 /// Gets the oauth2 token, either saved in tk.json or creates a new. if not current, refreshes it
 pub fn setup_oauth() -> Result<oauth2::Token> {
-    let f = File::open("tk.json");
-    let tk = if let Ok(f) = f {
-        json::from_reader(f)
+    let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+    path.push("tk.json");
+    let f = File::open(&path);
+    let tk = if let Ok(f7) = f {
+        json::from_reader(f7)
     }
     else {
-        let f = File::create("tk.json")?;
+        let f = File::create(&path)?;
         let tk = Token{ tk: authorize().unwrap(), created: Utc::now()};
         json::to_writer(f, &tk).expect("Could not write token");
         Ok(tk)
