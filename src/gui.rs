@@ -73,6 +73,8 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
         }).default_column(BasicColumn::Published);
 
     table.set_items(papers);
+    let length = table.len();
+    table.set_selected_row(length -1);
     table.set_on_submit(table_on_submit);
 
     siv.add_layer(
