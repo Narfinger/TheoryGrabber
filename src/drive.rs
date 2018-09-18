@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use reqwest;
-use reqwest::header::{AUTHORIZATION, LOCATION, HeaderMap, HeaderValue};
+use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderValue};
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -81,21 +81,20 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 /// Tries to resume an upload if an error happened
 /// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
-/*
 fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
     println!("Starting resume upload");
     let client = reqwest::Client::new();
     let mut header = h.clone();
-    header.insert(CONTENTRANGE, (ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
+    header.insert(CONTENT_RANGE, ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")});
     let res = client.put(loc).send()?;
     println!("Send put request");
-    if (res.status() == reqwest::StatusCode::Ok) | (res.status() == reqwest::StatusCode::Created) {
+    if (res.status() == reqwest::StatusCode::OK) | (res.status() == reqwest::StatusCode::Created) {
         Ok(())
     } else if res.status() == reqwest::StatusCode::NotFound {
         Err("Upload url not found, something is wrong".into())
     } else if res.status() == reqwest::StatusCode::PermanentRedirect {
         println!("Getting correct status code");
-        if let Some(ct) = res.headers().get::<reqwest::header::ContentRange>() {
+        if let Some(ct) = res.headers().get(CONTENT_RANGE) {
             println!("Getting target range");
             let p = ct.0.clone();
             match p {
@@ -131,7 +130,6 @@ fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
         Err("Unknown response returned".into())
     }
 }
-*/
 
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
