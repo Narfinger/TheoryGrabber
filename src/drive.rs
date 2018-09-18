@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use reqwest;
-use reqwest::header::{Headers, ContentRange, Authorization, Bearer, ContentRangeSpec};
+use reqwest::header::{AUTHORIZATION, LOCATION, HeaderMap, HeaderValue};
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -61,9 +61,9 @@ fn make_filename(paper: &Paper) -> String {
 /// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
 pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
     let client = reqwest::Client::new();
-    let mut header = Headers::new();
+    let mut header = HeaderMap::new();
 
-    header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
+    header.insert(AUTHORIZATION, HeaderValue::from_str(&tk.access_token).unwrap());
     let mut metadata = HashMap::new();
     metadata.insert("name", DIRECTORY_NAME);
     metadata.insert("mimeType", "application/vnd.google-apps.folder");
@@ -81,11 +81,12 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 /// Tries to resume an upload if an error happened
 /// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
+/*
 fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
     println!("Starting resume upload");
     let client = reqwest::Client::new();
     let mut header = h.clone();
-    header.set(ContentRange(ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
+    header.insert(CONTENTRANGE, (ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")}));
     let res = client.put(loc).send()?;
     println!("Send put request");
     if (res.status() == reqwest::StatusCode::Ok) | (res.status() == reqwest::StatusCode::Created) {
@@ -129,8 +130,8 @@ fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
     } else {
         Err("Unknown response returned".into())
     }
-
 }
+*/
 
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
@@ -138,9 +139,9 @@ fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
 pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> Result<()> {
     //getting the proper resumeable session URL
     let client = reqwest::Client::new();
-    let mut header = Headers::new();
+    let mut header = HeaderMap::new();
 
-    header.set(Authorization(Bearer { token: tk.access_token.to_owned() }));
+    header.insert(AUTHORIZATION, HeaderValue::from_str(&tk.access_token).unwrap());
 
     let filename = make_filename(paper);
 
@@ -161,10 +162,10 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
     )?;
 
     if res.status().is_success() {
-        if let Some(loc) = res.headers().get::<reqwest::header::Location>() {
+        if let Some(loc) = res.headers().get(LOCATION) {
             let fclone = f.try_clone().unwrap();
             let upload_res =  client
-                                .put(&loc.to_string())
+                                .put(loc.to_str().unwrap())
                                 .headers(header.clone())
                                 .body(f)
                                 .send();
