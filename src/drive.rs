@@ -85,7 +85,7 @@ fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
     println!("Starting resume upload");
     let client = reqwest::Client::new();
     let mut header = h.clone();
-    header.insert(CONTENT_RANGE, ContentRangeSpec::Unregistered{unit: String::from("*"), resp: String::from("*")});
+    header.insert(CONTENT_RANGE, HeaderValue::from_static("*-*"));
     let res = client.put(loc).send()?;
     println!("Send put request");
     if (res.status() == reqwest::StatusCode::OK) | (res.status() == reqwest::StatusCode::Created) {
@@ -96,32 +96,33 @@ fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
         println!("Getting correct status code");
         if let Some(ct) = res.headers().get(CONTENT_RANGE) {
             println!("Getting target range");
-            let p = ct.0.clone();
-            match p {
-                reqwest::header::ContentRangeSpec::Bytes{range: x, ..} => {
-                    if let Some((from, to)) = x {
-                        println!("Seeking the file back");
-                        f.seek(SeekFrom::Start(0))?;
-                        println!("Getting slices");
-                        let mut slices = vec![0u8; (to as usize) - (from as usize) ];
-                        f.read_exact(&mut slices)?;
-                        println!("Sending upload request");
-                        let res = client
-                            .put(&loc.to_string())
-                            .headers(h.clone())
-                            .body(slices)
-                            .send();
-                        println!("Upload request sent");
-                        if res.is_ok() {
-                            Ok(())
-                        } else {
-                            Err("We tried one resume and we could not finish".into())
-                        }
-                    } else {
-                        Err("content range spec could not work".into())
-                    }
-                },
-                _ => Err("Problem matching content header".into()),
+            let p:() = ct.0.clone();
+            
+            /// TODO THIS IS WRONG
+            let x = Some((0,0));
+            panic!("This is wrong");
+            
+            
+            if let Some((from, to)) = x {
+                println!("Seeking the file back");
+                f.seek(SeekFrom::Start(0))?;
+                println!("Getting slices");
+                let mut slices = vec![0u8; (to as usize) - (from as usize) ];
+                f.read_exact(&mut slices)?;
+                println!("Sending upload request");
+                let res = client
+                    .put(&loc.to_string())
+                    .headers(h.clone())
+                    .body(slices)
+                    .send();
+                println!("Upload request sent");
+                if res.is_ok() {
+                    Ok(())
+                } else {
+                    Err("We tried one resume and we could not finish".into())
+                }
+            } else {
+                Err("content range spec could not work".into())
             }
         } else {
             Err("Could not find Content Range header".into())
