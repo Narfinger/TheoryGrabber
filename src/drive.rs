@@ -109,7 +109,7 @@ fn parse_content_range(range: &str) -> Result<ContentRange> {
     if let Ok((_, l)) = content_range(range.as_bytes()) {
         Ok(l)
     } else {
-        Err("invalid content_range".into())
+        Err(format!("invalid content_range, str was {}", range).into())
     }
 }
 
@@ -169,7 +169,8 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
     let client = reqwest::Client::new();
     let mut header = HeaderMap::new();
 
-    header.insert(AUTHORIZATION, HeaderValue::from_str(&tk.access_token).unwrap());
+    let authstring = "Bearer: ".to_owned() + &tk.access_token;
+    header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
 
     let filename = make_filename(paper);
 
@@ -185,9 +186,13 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
         .json(&metadata)
         .build();
 
+    println!("Headers {:?}", header);
+
     let res = client.execute(query.unwrap()).chain_err(
         || "Error in getting resumeable url",
     )?;
+
+    println!("status {}", res.status());
 
     if res.status().is_success() {
         if let Some(loc) = res.headers().get(LOCATION) {
@@ -207,6 +212,6 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
             Err("no location header found".into())
         }
     } else {
-        Err("something went wrong with getting resumeable url".into())
+        Err("Something went wrong with getting resumeable url".into())
     }
 }
