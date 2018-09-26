@@ -5,6 +5,10 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use reqwest;
 use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderValue};
+use nom::digit;
+use std::str;
+use std::str::{FromStr,from_utf8};
+use std::num::ParseIntError;
 use types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -78,36 +82,61 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
 
     Ok(response.id)
 }
+
+struct ContentRange {
+    from: u32,
+    to: u32,
+}
+
+named!(
+    number<u32>,
+    map_res!(
+      map_res!(digit, str::from_utf8),
+      |s: &str| s.parse::<u32>()
+    )
+);
+
+named!(content_range<&[u8], ContentRange>,
+    do_parse!(
+        v: number >> 
+        ws!(tag!("-")) >> 
+        w: number >> 
+        (ContentRange { from: v, to: w }))
+);
+
+
+fn parse_content_range(range: &str) -> Result<ContentRange> {
+    if let Ok((_, l)) = content_range(range.as_bytes()) {
+        Ok(l)
+    } else {
+        Err("invalid content_range".into())
+    }
+}
+
 /// Tries to resume an upload if an error happened
 /// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
-fn resume_upload(loc: &str, mut f: File, h: &Headers) -> Result<()> {
+fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
     println!("Starting resume upload");
     let client = reqwest::Client::new();
     let mut header = h.clone();
     header.insert(CONTENT_RANGE, HeaderValue::from_static("*-*"));
     let res = client.put(loc).send()?;
     println!("Send put request");
-    if (res.status() == reqwest::StatusCode::OK) | (res.status() == reqwest::StatusCode::Created) {
+    if (res.status() == reqwest::StatusCode::OK) | (res.status() == reqwest::StatusCode::CREATED) {
         Ok(())
-    } else if res.status() == reqwest::StatusCode::NotFound {
+    } else if res.status() == reqwest::StatusCode::NOT_FOUND {
         Err("Upload url not found, something is wrong".into())
-    } else if res.status() == reqwest::StatusCode::PermanentRedirect {
+    } else if res.status() == reqwest::StatusCode::PERMANENT_REDIRECT {
         println!("Getting correct status code");
         if let Some(ct) = res.headers().get(CONTENT_RANGE) {
             println!("Getting target range");
-            let p:() = ct.0.clone();
-            
-            /// TODO THIS IS WRONG
-            let x = Some((0,0));
-            panic!("This is wrong");
-            
-            
-            if let Some((from, to)) = x {
+            let content_range = parse_content_range(ct.to_str().unwrap());
+            if let Ok(c) = content_range {
                 println!("Seeking the file back");
                 f.seek(SeekFrom::Start(0))?;
                 println!("Getting slices");
-                let mut slices = vec![0u8; (to as usize) - (from as usize) ];
+                let mut slices = vec![0u8; (c.to as usize) - (c.from as usize) ];
                 f.read_exact(&mut slices)?;
                 println!("Sending upload request");
                 let res = client
@@ -171,7 +200,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
             if upload_res.is_ok() { 
                 Ok(()) 
             } else {
-                resume_upload(loc, fclone, &header)
+                resume_upload(loc.to_str().unwrap(), fclone, &header)
             }
                            
         } else {
