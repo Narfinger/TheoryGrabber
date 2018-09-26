@@ -4,7 +4,7 @@ use std::io::Read;
 use reqwest;
 use std;
 use quick_xml;
-use quick_xml::reader::Reader;
+use quick_xml::Reader;
 use quick_xml::events::Event;
 use url::Url;
 use types::{Paper, Source};
@@ -94,12 +94,12 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                     }
                     b"link" => {
                         let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                        let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                        let it = bl.find(|i| i.as_ref().unwrap().key == b"href")
                             .unwrap()
                             .unwrap()
                             .value;
                         //let itowned: Vec<u8> = it.to_owned();
-                        let res: &str = std::str::from_utf8(it).unwrap();
+                        let res: &str = std::str::from_utf8(&it).unwrap();
                         let ress = res.to_string().clone();
                         cur_paper.link = Some(ress);
                     }
@@ -109,12 +109,12 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
             Ok(Event::Empty(e)) => {
                 if let b"link" = e.name() {
                     let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                    let it: &[u8] = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                    let it = bl.find(|i| i.as_ref().unwrap().key == b"href")
                         .unwrap()
                         .unwrap()
                         .value;
                     //let itowned: Vec<u8> = it.to_owned();
-                    let res: &str = std::str::from_utf8(it).unwrap();
+                    let res: &str = std::str::from_utf8(&it).unwrap();
                     let ress = res.to_string().clone();
                     cur_paper.link = Some(ress);
                 }

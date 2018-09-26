@@ -169,7 +169,7 @@ fn run() -> Result<()> {
                     || "Uploading function has error",
                 )?;
             }
-            progressbar.finish();
+            //progressbar.finish();
             config::write_now()?;
         }
     } else {
