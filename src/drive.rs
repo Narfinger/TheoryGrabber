@@ -169,7 +169,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
     let client = reqwest::Client::new();
     let mut header = HeaderMap::new();
 
-    let authstring = "bearer: ".to_owned() + &tk.access_token;
+    let authstring = "Bearer ".to_owned() + &tk.access_token;
     header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
 
     let filename = make_filename(paper);
@@ -186,14 +186,9 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
         .json(&metadata)
         .build();
 
-    println!("query: {:?}", &query);
-    println!("Headers {:?}", header);
-
     let res = client.execute(query.unwrap()).chain_err(
         || "Error in getting resumeable url",
     )?;
-
-    println!("status {}", res.status());
 
     if res.status().is_success() {
         if let Some(loc) = res.headers().get(LOCATION) {

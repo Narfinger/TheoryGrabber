@@ -152,15 +152,15 @@ fn run() -> Result<()> {
             let files = download_papers(&papers_to_download, &dir).chain_err(
                 || "Files error",
             )?;
-            /*
+            
             let progressbar = ProgressBar::new(files.len() as u64);
             progressbar.set_message("Uploading Papers");
             progressbar.set_style(ProgressStyle::default_bar()
                                   .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
                                   .progress_chars("#>-"));
             progressbar.enable_steady_tick(100);
-*/
-            for i in /*progressbar.wrap_iter(*/files.iter()/*)*/ {
+
+            for i in progressbar.wrap_iter(files.iter()) {
                 let f = File::open(i.path.clone()).chain_err(
                     || "File couldn't be opened",
                 )?;
