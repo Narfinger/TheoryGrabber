@@ -7,7 +7,6 @@ use reqwest;
 use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderValue};
 use nom::digit;
 use std::str;
-use std::str::{FromStr,from_utf8};
 use std::num::ParseIntError;
 use types::Paper;
 
@@ -56,7 +55,7 @@ fn author_string(paper: &Paper) -> String {
 /// Returns the filename we will save as for a given filename.
 fn make_filename(paper: &Paper) -> String {
     let datestring = paper.published.format("%Y-%m-%d");
-    let mut title = paper.title.clone();
+    let mut title = paper.title.to_owned();
     title.truncate(75);
 
     datestring.to_string() + "-" + &author_string(paper) + "-" + &title + ".pdf"

@@ -7,6 +7,7 @@ use quick_xml;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use url::Url;
+use types;
 use types::{Paper, Source};
 
 static ARXIV: &'static str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
@@ -154,7 +155,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
             .map(|p| {
                 //println!("{:?}", p);
                 Paper {
-                    title: p.title.unwrap(),
+                    title: types::sanitize_title(&p.title.unwrap()),
                     description: p.summary.unwrap(),
                     published: chrono::DateTime::parse_from_rfc3339(&p.published.unwrap())
                         .unwrap()

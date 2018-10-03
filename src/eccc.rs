@@ -14,6 +14,7 @@ use select::predicate::{Attr, And, Name};
 use select::node::Node;
 use config;
 use url;
+use types;
 use types::{Source, Paper};
 
 static ECCC: &'static str = "https://eccc.weizmann.ac.il/year/";
@@ -166,8 +167,8 @@ struct RoughPaper {
 
 /// Converts a `RoughPaper` to a `Paper` with the missing fields given. 
 fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: DateTime<Utc>) -> Paper {
-    Paper{ title: p.title.to_owned(), source: Source::ECCC, authors: p.authors.to_owned(),
-           link: link, description: description, published: published }
+    Paper{ title: types::sanitize_title(&p.title), source: Source::ECCC, authors: p.authors.to_owned(),
+           link, description, published }
 }
 
 /// Takes one div and returns the parsed `RoughPaper`.
@@ -207,7 +208,7 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 
     //we need to get the full abstract and full time from the details page
     
-    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), rough_published: date, authors: authors }) 
+    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), rough_published: date, authors }) 
 }
 
 /// Parses the year summary page.

@@ -1,6 +1,6 @@
 [package]
 name = "theory_grabber"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 
 [dependencies]
@@ -13,8 +13,8 @@ cursive_table_view = "0.5" # A basic table view implementation for cursive.
 error-chain = "0.11"           # Yet another error boilerplate library.
 indicatif = "0.9"    # A progress bar and cli reporting library for Rust
 rayon = "1.0"               # Simple work-stealing parallelism for Rust
-#reqwest = "0.8"             # higher level HTTP client library
-reqwest = {git = "https://github.com/seanmonstar/reqwest" }
+reqwest = "0.9"             # higher level HTTP client library
+#reqwest = {git = "https://github.com/seanmonstar/reqwest" }
 select = "0.4.2"                         # A library to extract useful data from HTML documents, suitable for web scraping.
 serde = "1.0"                      # A generic serialization/deserialization framework
 serde_json = "1.0"

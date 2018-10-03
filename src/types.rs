@@ -3,6 +3,7 @@ use chrono;
 use chrono::Weekday;
 use chrono_tz::America::New_York;
 use chrono::Datelike;
+use std;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
@@ -175,4 +176,8 @@ pub enum BasicColumn {
     Title,
     Source,
     Published,
+}
+
+pub fn sanitize_title(title: &str) -> String {
+    title.replace("\n", "").replace("  ", " ").replace(std::path::MAIN_SEPARATOR, "")
 }
