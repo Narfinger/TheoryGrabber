@@ -7,7 +7,7 @@ use cursive::views::{Dialog, DummyView, LinearLayout, TextView};
 use cursive_table_view::TableView;
 use cursive::vec::Vec2;
 use cursive::traits::View;
-use types::{BasicColumn, Paper, print_authors};
+use crate::types::{BasicColumn, Paper, print_authors};
 
 
 ///This is just taking some keyboard shortcuts and make them something

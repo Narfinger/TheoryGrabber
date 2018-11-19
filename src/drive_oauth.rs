@@ -1,4 +1,4 @@
-use errors::*;
+use crate::errors::*;
 use serde_json as json;
 use oauth2;
 use url::Url;
@@ -8,7 +8,7 @@ use std::fs::File;
 use std::net::TcpListener;
 use std::io::{BufRead, BufReader, Write};
 use app_dirs::*;
-use types::APP_INFO;
+use crate::types::APP_INFO;
 
 /// Represents a token and the date it was created
 #[derive(Clone, Debug, Serialize, Deserialize)]

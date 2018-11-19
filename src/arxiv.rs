@@ -1,5 +1,5 @@
 use chrono;
-use errors::*;
+use crate::errors::*;
 use std::io::Read;
 use reqwest;
 use std;
@@ -7,8 +7,8 @@ use quick_xml;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use url::Url;
-use types;
-use types::{Paper, Source};
+use crate::types;
+use crate::types::{Paper, Source};
 
 static ARXIV: &'static str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
 

@@ -1,4 +1,4 @@
-use errors::*;
+use crate::errors::*;
 use oauth2;
 use std::collections::HashMap;
 use std::fs::File;
@@ -8,7 +8,7 @@ use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderV
 use nom::digit;
 use std::str;
 use std::num::ParseIntError;
-use types::Paper;
+use crate::types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
 static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";

@@ -5,8 +5,8 @@ use cursive::traits::*;
 //use errors::*;
 use std;
 use std::sync::atomic::{AtomicBool, ATOMIC_BOOL_INIT, Ordering};
-use paper_dialog;
-use types::{BasicColumn, Paper};
+use crate::paper_dialog;
+use crate::types::{BasicColumn, Paper};
 
 static SHOULD_WE_SAVE: AtomicBool = ATOMIC_BOOL_INIT;
 

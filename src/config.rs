@@ -1,11 +1,11 @@
 use app_dirs::*;
 use chrono;
 use chrono::TimeZone;
-use errors::*;
+use crate::errors::*;
 use std::fs::File;
 use std::io::{Read, Write};
 use toml;
-use types::APP_INFO;
+use crate::types::APP_INFO;
 
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize)]

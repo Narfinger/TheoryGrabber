@@ -1,6 +1,6 @@
 use chrono::{Datelike, DateTime, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
-use errors::*;
+use crate::errors::*;
 use std;
 use std::io::Read;
 use std::str::{FromStr,from_utf8};
@@ -12,10 +12,10 @@ use rayon::prelude::*;
 use select::document::Document;
 use select::predicate::{Attr, And, Name};
 use select::node::Node;
-use config;
+use crate::config;
 use url;
-use types;
-use types::{Source, Paper};
+use crate::types;
+use crate::types::{Source, Paper};
 
 static ECCC: &'static str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &'static str = "https://eccc.weizmann.ac.il";

@@ -45,13 +45,13 @@ pub mod drive_oauth;
 pub mod types;
 
 use clap::{Arg, App};
-use errors::*;
+use crate::errors::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::thread;
 use std::io::copy;
 use std::fs::File;
 use std::path::Path;
-use types::{DownloadedPaper, Paper};
+use crate::types::{DownloadedPaper, Paper};
 use tempdir::TempDir;
 
 /// Downloads the papers to the `TempDir`.
