@@ -60,7 +60,7 @@ fn button_download_all(siv: &mut Cursive) {
 
 /// Returns papers that are where selected for download. We return None if we do not want to save the date.
 pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
-    let mut siv = Cursive::new();
+    let mut siv = Cursive::default();
     let mut table = TableView::<Paper, BasicColumn>::new()
         .column(BasicColumn::Title, "Title", |c| {
             c.ordering(std::cmp::Ordering::Greater).width_percent(75)

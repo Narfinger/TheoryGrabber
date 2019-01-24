@@ -58,9 +58,9 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
             s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
                 table.remove_item(index);
             });
-            s.pop_layer()
+            s.pop_layer();
         })
-        .button("Close", move |s| s.pop_layer());
+        .button("Close", move |s| { s.pop_layer(); });
         
     PaperDialog { d: dialog }
 }
