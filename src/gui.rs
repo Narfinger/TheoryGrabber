@@ -49,12 +49,14 @@ fn button_quit(siv: &mut Cursive) {
     siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
         table.clear();
     });
+    siv.clear();
     siv.quit();
 }
 
 /// Set that we should save the date and quits the gui.
 fn button_download_all(siv: &mut Cursive) {
     SHOULD_WE_SAVE.store(true, Ordering::Relaxed); //I have no idea if this is the correct ordering
+    siv.clear();
     siv.quit();
 }
 

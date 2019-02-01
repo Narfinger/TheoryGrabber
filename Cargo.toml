@@ -1,5 +1,6 @@
 [package]
 name = "theory_grabber"
+license = "GPL-3.0-only"
 version = "0.9.1"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 edition = "2018"
