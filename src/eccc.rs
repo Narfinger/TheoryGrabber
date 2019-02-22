@@ -279,3 +279,9 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
         .filter(|p| p.rough_published >= naive_filter_date)
         .map(parse_eccc_details).collect::<Result<Vec<Paper>>>()
 }
+
+#[test]
+fn parse_ecc_test() {
+    let now = Utc::now();
+    assert!(parse_eccc(now).is_ok());
+}
