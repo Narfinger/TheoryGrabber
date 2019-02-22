@@ -1,9 +1,9 @@
 version: 2.1
 
-orbs:
-    image: circleci/rust:latest
-
-workflows:
-    "build theorygrabber":
-        jobs:
-          - cargo build
+jobs:
+    build:
+        docker:
+            - image: circleci/rust:latest
+        steps:
+            - checkout
+            - run: cargo build
