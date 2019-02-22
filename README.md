@@ -1,6 +1,6 @@
 TheoryGrabber
 ==========================
-[![CircleCI](https://circleci.com/gh/Narfinger/TheoryGrabber.svg?style=svg)](https://circleci.com/gh/Narfinger/TheoryGrabber)
+Build: [![CircleCI](https://circleci.com/gh/Narfinger/TheoryGrabber.svg?style=svg)](https://circleci.com/gh/Narfinger/TheoryGrabber)
 
 Grabs papers from arxiv and eccc, displayes them nicely and puts them into a google drive folder.
 
