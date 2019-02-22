@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-    rust: circleci/rust:latest
+    image: circleci/rust:latest
 
 workflows:
     "build theorygrabber":
