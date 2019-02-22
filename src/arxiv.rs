@@ -168,3 +168,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
             .collect::<Vec<Paper>>(),
     )
 }
+#[test]
+fn get_arxiv_papers_test() {
+    assert!(parse_arxiv().is_ok());
+}
