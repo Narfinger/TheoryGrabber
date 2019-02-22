@@ -281,7 +281,8 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
 }
 
 #[test]
-fn parse_ecc_test() {
+fn parse_eccc_test() {
     let now = Utc::now();
-    assert!(parse_eccc(now).is_ok());
+    assert!(false);
+    //assert!(parse_eccc(now).is_ok());
 }
