@@ -7,3 +7,9 @@ jobs:
         steps:
             - checkout
             - run: cargo build
+    test:
+        docker:
+            -image: circleci/rust:latest
+        steps:
+            - checkout
+            - run: cargo test
