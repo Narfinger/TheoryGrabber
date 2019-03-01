@@ -14,8 +14,8 @@ chrono-tz = "0.5"         # TimeZone implementations for rust-chrono from the IA
 cursive = { version = "0.9", features= ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
 cursive_table_view = {git = "https://github.com/yorickdowne/cursive_table_view.git", rev="2a8b6d7055fe8249aa54f728da240da00b5c8924"}
 #cursive_table_view = "0.5" # A basic table view implementation for cursive.
-error-chain = "0.11"           # Yet another error boilerplate library.
-indicatif = "0.9"    # A progress bar and cli reporting library for Rust
+error-chain = "0.12"           # Yet another error boilerplate library.
+indicatif = "0.11"    # A progress bar and cli reporting library for Rust
 rayon = "1.0"               # Simple work-stealing parallelism for Rust
 reqwest = "0.9"             # higher level HTTP client library
 #reqwest = {git = "https://github.com/seanmonstar/reqwest" }
@@ -28,6 +28,6 @@ tempdir = "0.3"           # A library for managing a temporary directory and del
 tokio-core = "0.1"             # Core I/O and event loop primitives for asynchronous I/O in Rust. Foundation for therest of the tokio crates. 
 toml = "0.4"                   # A native Rust encoder and decoder of TOML-formatted files and streams. Provides implementations of the standard Serialize/Deser…
 oauth2 = "1.3"                        # Bindings for exchanging OAuth 2 tokens
-quick-xml = "0.12"               # High performance xml reader and writer
-nom = "4.0"                 # A byte-oriented, zero-copy, parser combinators library
+quick-xml = "0.13"               # High performance xml reader and writer
+nom = "4.2"                 # A byte-oriented, zero-copy, parser combinators library
 url = "1.7"                  # URL library for Rust, based on the WHATWG URL Standard

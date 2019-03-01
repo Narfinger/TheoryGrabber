@@ -62,35 +62,37 @@ fn button_download_all(siv: &mut Cursive) {
 
 /// Returns papers that are where selected for download. We return None if we do not want to save the date.
 pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
-    let mut siv = Cursive::default();
-    let mut table = TableView::<Paper, BasicColumn>::new()
-        .column(BasicColumn::Title, "Title", |c| {
-            c.ordering(std::cmp::Ordering::Greater).width_percent(75)
-        })
-        .column(BasicColumn::Source, "Source", |c| {
-            c.ordering(std::cmp::Ordering::Greater)
-        })
-        .column(BasicColumn::Published, "Published", |c| {
-            c.ordering(std::cmp::Ordering::Greater)
-        }).default_column(BasicColumn::Published);
+    let val = {
+        let mut siv = Cursive::default();
+        let mut table = TableView::<Paper, BasicColumn>::new()
+            .column(BasicColumn::Title, "Title", |c| {
+                c.ordering(std::cmp::Ordering::Greater).width_percent(75)
+            })
+            .column(BasicColumn::Source, "Source", |c| {
+                c.ordering(std::cmp::Ordering::Greater)
+            })
+            .column(BasicColumn::Published, "Published", |c| {
+                c.ordering(std::cmp::Ordering::Greater)
+            }).default_column(BasicColumn::Published);
 
-    table.set_items(papers);
-    let length = table.len();
-    table.set_selected_row(length -1);
-    table.set_on_submit(table_on_submit);
+        table.set_items(papers);
+        let length = table.len();
+        table.set_selected_row(length -1);
+        table.set_on_submit(table_on_submit);
 
-    siv.add_layer(
-        Dialog::around(table.with_id("table").min_size((500, 80)))
-            .title("Table View")
-            .button("Download all and save", button_download_all)
-            .button("Quit", button_quit)
-    );
+        siv.add_layer(
+            Dialog::around(table.with_id("table").min_size((500, 80)))
+                .title("Table View")
+                .button("Download all and save", button_download_all)
+                .button("Quit", button_quit)
+        );
 
-    siv.run();
+        siv.run();
 
-    let val = siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
-        table.take_items()
-    }).unwrap();
+        siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+            table.take_items()
+        }).unwrap()
+    };
 
     if SHOULD_WE_SAVE.load(Ordering::Relaxed) {
         Some(val)
