@@ -3,7 +3,6 @@ use chrono_tz::Asia::Jerusalem;
 use crate::errors::*;
 use std;
 use std::io::Read;
-use std::str::{FromStr,from_utf8};
 use reqwest;
 use nom::digit;
 #[cfg(test)]
@@ -123,8 +122,8 @@ fn date_parse_test() {
 fn get_url() -> Vec<String> {
     let now = Utc::now().year();
     let s = config::read_config_time_or_default();
-    
-    (s.year() .. now+1).into_iter().map(|cy| {
+
+    (s.year()..=now).map(|cy| {
         format!("{}{:?}/", ECCC.to_string(), cy)
     }).collect::<Vec<String>>()
 }
@@ -148,7 +147,7 @@ fn extract_id_rough_date(id_date_raw: &str) -> Result<(String, NaiveDate)> {
     let id_string = id_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
     let date_string = date_vec.iter().fold(String::from(""), |acc, x| acc + " " + x);
     let date_naive = parse_rough_date(&date_string)?;
-   
+
     Ok((id_string, date_naive))
 }
 
@@ -165,7 +164,7 @@ struct RoughPaper {
     pub authors: Vec<String>,
 }
 
-/// Converts a `RoughPaper` to a `Paper` with the missing fields given. 
+/// Converts a `RoughPaper` to a `Paper` with the missing fields given.
 fn to_paper(p: &RoughPaper, link: url::Url, description: String, published: DateTime<Utc>) -> Paper {
     Paper{ title: types::sanitize_title(&p.title), source: Source::ECCC, authors: p.authors.to_owned(),
            link, description, published }
@@ -192,14 +191,14 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
         return Err("authors not found".into())
     }
 
-    
+
 
     let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
     let link_raw = div.find(Name("a")).nth(0).unwrap().attr("href").unwrap();
     let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
 
     let authors_raw = div.children().nth(1).unwrap().text();
-    
+
     let (_, date) = extract_id_rough_date(&id_and_date_raw)?;
     let link = BASE_URL.to_owned() + link_raw.trim();
     let title = title_raw.trim();
@@ -207,8 +206,8 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
     let authors = extract_authors(&authors_raw);
 
     //we need to get the full abstract and full time from the details page
-    
-    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), rough_published: date, authors }) 
+
+    Ok(RoughPaper { title: title.to_string(), details_link: link.to_string(), rough_published: date, authors })
 }
 
 /// Parses the year summary page.
@@ -219,12 +218,12 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
         let res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
         if !res.status().is_success() {
             return Err("Some error in getting the reqwuest".into());
-        } 
+        }
         let parsedoc = Document::from_read(res)?;
         let divs = parsedoc.find(And(Name("div"),Attr("id", "box")));
 
         //Vec<Result<Vec<Result>>> is the corresponding type structure, a bit
-        divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()   //type: Vec<Result<RoughPaper>> (actually iterator over the vector)  
+        divs.map(parse_single_div).collect::<Result<Vec<RoughPaper>>>()   //type: Vec<Result<RoughPaper>> (actually iterator over the vector)
     });
 
 
@@ -242,11 +241,11 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let mut res = reqwest::get(&p.details_link).chain_err(|| "Can't get eccc")?;
     if !res.status().is_success() {
         return Err("Some error in getting the reqwuest".into());
-    } 
-    
+    }
+
     let mut res_string = String::new();
     res.read_to_string(&mut res_string)?;
-    
+
     let parsedoc = Document::from(res_string.as_str());
     let div = parsedoc.find(And(Name("div"),Attr("id", "box"))).nth(0).unwrap();
 
@@ -258,14 +257,14 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let url_string = p.details_link.to_owned() + "/download";
     let link = url::Url::parse(&url_string).unwrap(); //we do not need to parse anything
 
-    //this check is for parser security as we just take an arbitrary child which is not very parsing save 
+    //this check is for parser security as we just take an arbitrary child which is not very parsing save
     if div.children().nth(8).unwrap().text() != "Abstract:" {
         return Err("Cannot find abstract".into());
     }
 
     //another "safety" check that it indeed has a <p> tag
     let description = div.children().nth(11).unwrap().first_child().unwrap().text();
-    
+
     Ok(to_paper(p, link, description, date))
 }
 

@@ -11,9 +11,9 @@ app_dirs = "1.2"         # Put your app's data in the right place on every platf
 clap = "2.32"               # A simple to use, efficient, and full featured  Command Line Argument Parser 
 chrono = {version = "0.4", features = ["serde"]}              # Date and time library for Rust
 chrono-tz = "0.5"         # TimeZone implementations for rust-chrono from the IANA database
-cursive = { version = "0.10", features= ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
+cursive = { version = "0.11", features= ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
 #cursive_table_view = {git = "https://github.com/yorickdowne/cursive_table_view.git", rev="2a8b6d7055fe8249aa54f728da240da00b5c8924"}
-cursive_table_view = "0.7" # A basic table view implementation for cursive.
+cursive_table_view = "0.9" # A basic table view implementation for cursive.
 error-chain = "0.12"           # Yet another error boilerplate library.
 indicatif = "0.11"    # A progress bar and cli reporting library for Rust
 rayon = "1.0"               # Simple work-stealing parallelism for Rust

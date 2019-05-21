@@ -7,7 +7,6 @@ use reqwest;
 use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderValue};
 use nom::digit;
 use std::str;
-use std::num::ParseIntError;
 use crate::types::Paper;
 
 static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
@@ -31,7 +30,7 @@ struct FileUploadJSON {
     name: String,
     mime_type: String,
     parents: Vec<String>
-} 
+}
 
 /// Returns the initial of the last name of an author.
 fn get_last_name_initials(author: &str) -> char {
@@ -76,7 +75,7 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
         .headers(header.clone())
         .json(&metadata)
         .send().chain_err(|| "Error in sending to create directory")?;
-    
+
     let response: FileCreateResponse = res.json().chain_err(|| "Error in decoding Response")?;
 
     Ok(response.id)
@@ -97,9 +96,9 @@ named!(
 
 named!(content_range<&[u8], ContentRange>,
     do_parse!(
-        v: number >> 
-        ws!(tag!("-")) >> 
-        w: number >> 
+        v: number >>
+        ws!(tag!("-")) >>
+        w: number >>
         (ContentRange { from: v, to: w }))
 );
 
@@ -113,7 +112,7 @@ fn parse_content_range(range: &str) -> Result<ContentRange> {
 }
 
 /// Tries to resume an upload if an error happened
-/// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file 
+/// gets `id` which is the file id, `loc` which is the resumeable url and `f` which is the file
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
 fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
     println!("Starting resume upload");
@@ -178,7 +177,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
         mime_type: "application/pdf".to_string(),
         parents: vec![String::from(fileid)],
     };
-    
+
     let query = client
         .post(UPLOAD_URL)
         .headers(header.clone())
@@ -197,12 +196,12 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
                                 .headers(header.clone())
                                 .body(f)
                                 .send();
-            if upload_res.is_ok() { 
-                Ok(()) 
+            if upload_res.is_ok() {
+                Ok(())
             } else {
                 resume_upload(loc.to_str().unwrap(), fclone, &header)
             }
-                           
+
         } else {
             Err("no location header found".into())
         }

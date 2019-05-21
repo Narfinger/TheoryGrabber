@@ -49,7 +49,7 @@ fn get_client_secrets() -> Installed {
 /// Initital authorization to get the token
 fn authorize() -> Result<oauth2::Token> {
     let secret = get_client_secrets();
-    let mut config = oauth2::Config::new(secret.client_id, secret.client_secret, secret.auth_uri, secret.token_uri);    
+    let mut config = oauth2::Config::new(secret.client_id, secret.client_secret, secret.auth_uri, secret.token_uri);
     config = config.add_scope("https://www.googleapis.com/auth/drive.file");
     config = config.set_redirect_url("http://localhost:8080");
     let authorize_url = config.authorize_url();
@@ -84,13 +84,13 @@ fn authorize() -> Result<oauth2::Token> {
             break;
             }
         };
-    config.exchange_code(code).map_err(|e| e.into())
+    config.exchange_code(code).map_err(std::convert::Into::into)
 }
 
 /// Refreshes a token with the saved (`oldtocken`) refresh token
 fn refresh(oldtoken: &Token) -> Result<Token> {
     let secret = get_client_secrets();
-    let params = [("refresh_token", oldtoken.tk.refresh_token.clone().unwrap()), 
+    let params = [("refresh_token", oldtoken.tk.refresh_token.clone().unwrap()),
                     ("client_id", secret.client_id),
                     ("client_secret", secret.client_secret),
                     ("grant_type", String::from("refresh_token"))];
@@ -104,7 +104,7 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
         expires_in: u32,
     }
     let new_response: Response = json::from_reader(res)?;
-    
+
     //changing to new token, take the old one as a copy
     let mut newtk = oldtoken.tk.clone();
     newtk.access_token = new_response.access_token;

@@ -4,11 +4,11 @@ use cursive_table_view::{TableView, TableViewItem};
 use cursive::traits::*;
 //use errors::*;
 use std;
-use std::sync::atomic::{AtomicBool, ATOMIC_BOOL_INIT, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use crate::paper_dialog;
 use crate::types::{BasicColumn, Paper};
 
-static SHOULD_WE_SAVE: AtomicBool = ATOMIC_BOOL_INIT;
+static SHOULD_WE_SAVE: AtomicBool = AtomicBool::new(false);
 
 
 impl TableViewItem<BasicColumn> for Paper {
