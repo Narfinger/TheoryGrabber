@@ -1,17 +1,17 @@
 use crate::errors::*;
+use crate::types::Paper;
+use nom::digit;
 use oauth2;
+use reqwest;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
-use reqwest;
-use reqwest::header::{AUTHORIZATION, CONTENT_RANGE, LOCATION, HeaderMap, HeaderValue};
-use nom::digit;
 use std::str;
-use crate::types::Paper;
 
-static UPLOAD_URL: &'static str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
-static DIRECTORY_URL: &'static str = "https://www.googleapis.com/drive/v3/files";
-static DIRECTORY_NAME: &'static str = "TheoryGrabber";
+static UPLOAD_URL: &str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
+static DIRECTORY_URL: &str = "https://www.googleapis.com/drive/v3/files";
+static DIRECTORY_NAME: &str = "TheoryGrabber";
 
 /// The response to a file create query.
 #[derive(Serialize, Deserialize)]
@@ -29,14 +29,15 @@ struct FileCreateResponse {
 struct FileUploadJSON {
     name: String,
     mime_type: String,
-    parents: Vec<String>
+    parents: Vec<String>,
 }
 
 /// Returns the initial of the last name of an author.
 fn get_last_name_initials(author: &str) -> char {
-    let lastname = author.split_whitespace().nth(1).expect(
-        "No lastname found?",
-    ); //lastname
+    let lastname = author
+        .split_whitespace()
+        .nth(1)
+        .expect("No lastname found?"); //lastname
     lastname.chars().next().unwrap()
 }
 
@@ -65,7 +66,10 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
     let client = reqwest::Client::new();
     let mut header = HeaderMap::new();
 
-    header.insert(AUTHORIZATION, HeaderValue::from_str(&tk.access_token).unwrap());
+    header.insert(
+        AUTHORIZATION,
+        HeaderValue::from_str(&tk.access_token).unwrap(),
+    );
     let mut metadata = HashMap::new();
     metadata.insert("name", DIRECTORY_NAME);
     metadata.insert("mimeType", "application/vnd.google-apps.folder");
@@ -74,7 +78,8 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
         .post(DIRECTORY_URL)
         .headers(header.clone())
         .json(&metadata)
-        .send().chain_err(|| "Error in sending to create directory")?;
+        .send()
+        .chain_err(|| "Error in sending to create directory")?;
 
     let response: FileCreateResponse = res.json().chain_err(|| "Error in decoding Response")?;
 
@@ -88,10 +93,7 @@ struct ContentRange {
 
 named!(
     number<u32>,
-    map_res!(
-      map_res!(digit, str::from_utf8),
-      |s: &str| s.parse::<u32>()
-    )
+    map_res!(map_res!(digit, str::from_utf8), |s: &str| s.parse::<u32>())
 );
 
 named!(content_range<&[u8], ContentRange>,
@@ -101,7 +103,6 @@ named!(content_range<&[u8], ContentRange>,
         w: number >>
         (ContentRange { from: v, to: w }))
 );
-
 
 fn parse_content_range(range: &str) -> Result<ContentRange> {
     if let Ok((_, l)) = content_range(range.as_bytes()) {
@@ -134,7 +135,7 @@ fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
                 println!("Seeking the file back");
                 f.seek(SeekFrom::Start(0))?;
                 println!("Getting slices");
-                let mut slices = vec![0u8; (c.to as usize) - (c.from as usize) ];
+                let mut slices = vec![0u8; (c.to as usize) - (c.from as usize)];
                 f.read_exact(&mut slices)?;
                 println!("Sending upload request");
                 let res = client
@@ -184,24 +185,23 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
         .json(&metadata)
         .build();
 
-    let res = client.execute(query.unwrap()).chain_err(
-        || "Error in getting resumeable url",
-    )?;
+    let res = client
+        .execute(query.unwrap())
+        .chain_err(|| "Error in getting resumeable url")?;
 
     if res.status().is_success() {
         if let Some(loc) = res.headers().get(LOCATION) {
             let fclone = f.try_clone().unwrap();
-            let upload_res =  client
-                                .put(loc.to_str().unwrap())
-                                .headers(header.clone())
-                                .body(f)
-                                .send();
+            let upload_res = client
+                .put(loc.to_str().unwrap())
+                .headers(header.clone())
+                .body(f)
+                .send();
             if upload_res.is_ok() {
                 Ok(())
             } else {
                 resume_upload(loc.to_str().unwrap(), fclone, &header)
             }
-
         } else {
             Err("no location header found".into())
         }

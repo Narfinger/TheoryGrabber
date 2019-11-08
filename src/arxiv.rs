@@ -1,16 +1,16 @@
-use chrono;
 use crate::errors::*;
-use std::io::Read;
-use reqwest;
-use std;
-use quick_xml;
-use quick_xml::Reader;
-use quick_xml::events::Event;
-use url::Url;
 use crate::types;
 use crate::types::{Paper, Source};
+use chrono;
+use quick_xml;
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use reqwest;
+use std;
+use std::io::Read;
+use url::Url;
 
-static ARXIV: &'static str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
+static ARXIV: &str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
 
 /// Parses the Arxiv xml and gives the last 100 papers.
 pub fn parse_arxiv() -> Result<Vec<Paper>> {
@@ -31,7 +31,6 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         authors: Vec<String>,
     };
 
-
     //this is super inefficient!
     let mut reqreader = reqwest::get(ARXIV)?;
     let mut resp = String::new();
@@ -51,24 +50,22 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
     };
     loop {
         match reader.read_event(&mut buf) {
-            Ok(Event::End(ref e)) => {
-                match e.name() {
-                    b"entry" => {
-                        tag = Tag::Nothing;
-                        entries.push(cur_paper);
-                        cur_paper = TmpPaper {
-                            published: None,
-                            title: None,
-                            summary: None,
-                            link: None,
-                            authors: Vec::new(),
-                        };
-                    }
-                    _ => {
-                        tag = Tag::Entry;
-                    }
+            Ok(Event::End(ref e)) => match e.name() {
+                b"entry" => {
+                    tag = Tag::Nothing;
+                    entries.push(cur_paper);
+                    cur_paper = TmpPaper {
+                        published: None,
+                        title: None,
+                        summary: None,
+                        link: None,
+                        authors: Vec::new(),
+                    };
                 }
-            }
+                _ => {
+                    tag = Tag::Entry;
+                }
+            },
             Ok(Event::Start(ref e)) => {
                 match e.name() {
                     b"entry" => {
@@ -95,7 +92,8 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                     }
                     b"link" => {
                         let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                        let it = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                        let it = bl
+                            .find(|i| i.as_ref().unwrap().key == b"href")
                             .unwrap()
                             .unwrap()
                             .value;
@@ -110,7 +108,8 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
             Ok(Event::Empty(e)) => {
                 if let b"link" = e.name() {
                     let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                    let it = bl.find(|i| i.as_ref().unwrap().key == b"href")
+                    let it = bl
+                        .find(|i| i.as_ref().unwrap().key == b"href")
                         .unwrap()
                         .unwrap()
                         .value;
@@ -124,20 +123,17 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                 match tag {
                     Tag::Published => {
                         cur_paper.published = Some(e.unescape_and_decode(&reader).unwrap())
-                    } 
-                    Tag::Title => cur_paper.title = Some(e.unescape_and_decode(&reader).unwrap()), 
+                    }
+                    Tag::Title => cur_paper.title = Some(e.unescape_and_decode(&reader).unwrap()),
                     Tag::Summary => {
                         cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
                     }
-                    Tag::Author => {
-                        cur_paper.authors.push(
-                            e.unescape_and_decode(&reader).unwrap(),
-                        )
-                    }
+                    Tag::Author => cur_paper
+                        .authors
+                        .push(e.unescape_and_decode(&reader).unwrap()),
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
-                    Tag::Nothing | Tag::Entry => {}  
+                    Tag::Nothing | Tag::Entry => {}
                 }
-
 
                 e.unescape_and_decode(&reader).unwrap();
             }
@@ -147,26 +143,23 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         }
     }
 
-
     //converting tmp to real and testing
-    Ok(
-        entries
-            .into_iter()
-            .map(|p| {
-                //println!("{:?}", p);
-                Paper {
-                    title: types::sanitize_title(&p.title.unwrap()),
-                    description: p.summary.unwrap(),
-                    published: chrono::DateTime::parse_from_rfc3339(&p.published.unwrap())
-                        .unwrap()
-                        .with_timezone(&chrono::Utc),
-                    link: Url::parse(&p.link.unwrap()).unwrap(),
-                    source: Source::Arxiv,
-                    authors: p.authors,
-                }
-            })
-            .collect::<Vec<Paper>>(),
-    )
+    Ok(entries
+        .into_iter()
+        .map(|p| {
+            //println!("{:?}", p);
+            Paper {
+                title: types::sanitize_title(&p.title.unwrap()),
+                description: p.summary.unwrap(),
+                published: chrono::DateTime::parse_from_rfc3339(&p.published.unwrap())
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                link: Url::parse(&p.link.unwrap()).unwrap(),
+                source: Source::Arxiv,
+                authors: p.authors,
+            }
+        })
+        .collect::<Vec<Paper>>())
 }
 #[test]
 fn get_arxiv_papers_test() {
