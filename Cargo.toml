@@ -29,5 +29,5 @@ tokio-core = "0.1"             # Core I/O and event loop primitives for asynchro
 toml = "0.5"                   # A native Rust encoder and decoder of TOML-formatted files and streams. Provides implementations of the standard Serialize/Deser…
 oauth2 = "1.3"                        # Bindings for exchanging OAuth 2 tokens
 quick-xml = "0.17"               # High performance xml reader and writer
-nom = "4.2"                 # A byte-oriented, zero-copy, parser combinators library
+nom = "5.0"                 # A byte-oriented, zero-copy, parser combinators library
 url = "1.7"                  # URL library for Rust, based on the WHATWG URL Standard

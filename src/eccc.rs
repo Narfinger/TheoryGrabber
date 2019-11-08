@@ -4,7 +4,7 @@ use crate::types;
 use crate::types::{Paper, Source};
 use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
-use nom::digit;
+use nom::character::complete::digit1;
 #[cfg(test)]
 use nom::IResult;
 use rayon::prelude::*;
@@ -23,7 +23,7 @@ static BASE_URL: &str = "https://eccc.weizmann.ac.il";
 
 named!(
     number<u32>,
-    map_res!(map_res!(digit, std::str::from_utf8), |s: &str| s
+    map_res!(map_res!(digit1, std::str::from_utf8), |s: &str| s
         .parse::<u32>())
 );
 //named!(number<u32>, map_res!(map_res!(digit,from_utf8), FromStr::from_str) );

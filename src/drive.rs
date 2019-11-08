@@ -1,6 +1,6 @@
 use crate::errors::*;
 use crate::types::Paper;
-use nom::digit;
+use nom::character::complete::digit1;
 use oauth2;
 use reqwest;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
@@ -93,7 +93,7 @@ struct ContentRange {
 
 named!(
     number<u32>,
-    map_res!(map_res!(digit, str::from_utf8), |s: &str| s.parse::<u32>())
+    map_res!(map_res!(digit1, str::from_utf8), |s: &str| s.parse::<u32>())
 );
 
 named!(content_range<&[u8], ContentRange>,
