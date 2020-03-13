@@ -1,7 +1,7 @@
 use crate::config;
-use crate::errors::*;
 use crate::types;
 use crate::types::{Paper, Source};
+use anyhow::{Context, Result};
 use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
 use nom::character::complete::digit1;
@@ -58,11 +58,11 @@ fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     if let Ok((_, s)) = res {
         Ok(s)
     } else {
-        Err(format!(
+        Err(anyhow!(
             "Error parsing rough date from string \"{}\"\n with error {:?}",
-            &st, res
-        )
-        .into())
+            &st,
+            res
+        ))
     }
 }
 
@@ -86,10 +86,14 @@ fn parse_date(t: &str) -> Result<DateTime<Utc>> {
         if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
             Ok(israel.with_timezone(&Utc))
         } else {
-            Err("timezone conversion failed".into())
+            Err(anyhow!("timezone conversion failed"))
         }
     } else {
-        Err(format!("error in parsing date from \"{}\" with error {:?}", st, res).into())
+        Err(anyhow!(
+            "error in parsing date from \"{}\" with error {:?}",
+            st,
+            res
+        ))
     }
 }
 
@@ -223,7 +227,7 @@ struct RoughPaper {
 /// Converts a `RoughPaper` to a `Paper` with the missing fields given.
 fn to_paper(
     p: &RoughPaper,
-    link: url::Url,
+    link: reqwest::Url,
     description: String,
     published: DateTime<Utc>,
 ) -> Paper {
@@ -242,20 +246,20 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
     //testing if the unwraps are ok
     //normally I would use different way to do this but I don't quite know how to make it work here
     if div.find(Name("u")).nth(0).is_none() {
-        return Err("Could not find u name".into());
+        return Err(anyhow!("Could not find u name"));
     }
     if div.find(Name("a")).nth(0).is_none() {
-        return Err("Could not find a name".into());
+        return Err(anyhow!("Could not find a name"));
     }
     if div.find(Name("a")).nth(0).unwrap().attr("href").is_none() {
-        return Err("a name does not have href".into());
+        return Err(anyhow!("a name does not have href"));
     }
     if div.find(Name("h4")).nth(0).is_none() {
-        return Err("could not find h4".into());
+        return Err(anyhow!("could not find h4"));
     }
 
     if div.children().nth(1).is_none() {
-        return Err("authors not found".into());
+        return Err(anyhow!("authors not found"));
     }
 
     let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
@@ -285,9 +289,9 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
     let strings = get_url();
     let res = strings.iter().map(|i| {
-        let res = reqwest::get(i).chain_err(|| "Can't get eccc")?;
+        let res = reqwest::blocking::get(i).context("Can't get eccc")?;
         if !res.status().is_success() {
-            return Err("Some error in getting the reqwuest".into());
+            return Err(anyhow!("Some error in getting the reqwuest"));
         }
         let parsedoc = Document::from_read(res)?;
         let divs = parsedoc.find(And(Name("div"), Attr("id", "box")));
@@ -308,9 +312,9 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
 
 /// Function that queries and parses the details page for a given `RoughPaper`.
 fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
-    let mut res = reqwest::get(&p.details_link).chain_err(|| "Can't get eccc")?;
+    let mut res = reqwest::blocking::get(&p.details_link).context("Can't get eccc")?;
     if !res.status().is_success() {
-        return Err("Some error in getting the reqwuest".into());
+        return Err(anyhow!("Some error in getting the reqwuest"));
     }
 
     let mut res_string = String::new();
@@ -334,11 +338,11 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let date = parse_date(&date_string).unwrap();
 
     let url_string = p.details_link.to_owned() + "/download";
-    let link = url::Url::parse(&url_string).unwrap(); //we do not need to parse anything
+    let link = reqwest::Url::parse(&url_string).unwrap(); //we do not need to parse anything
 
     //this check is for parser security as we just take an arbitrary child which is not very parsing save
     if div.children().nth(8).unwrap().text() != "Abstract:" {
-        return Err("Cannot find abstract".into());
+        return Err(anyhow!("Cannot find abstract"));
     }
 
     //another "safety" check that it indeed has a <p> tag

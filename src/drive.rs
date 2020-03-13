@@ -1,5 +1,7 @@
-use crate::errors::*;
+use crate::oauth2::prelude::SecretNewType;
+use crate::oauth2::TokenResponse;
 use crate::types::Paper;
+use anyhow::{Context, Result};
 use nom::character::complete::digit1;
 use oauth2;
 use reqwest;
@@ -62,13 +64,13 @@ fn make_filename(paper: &Paper) -> String {
 }
 
 /// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
-pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
-    let client = reqwest::Client::new();
+pub fn create_directory(tk: &oauth2::basic::BasicTokenResponse) -> Result<String> {
+    let client = reqwest::blocking::Client::new();
     let mut header = HeaderMap::new();
 
     header.insert(
         AUTHORIZATION,
-        HeaderValue::from_str(&tk.access_token).unwrap(),
+        HeaderValue::from_str(tk.access_token().secret()).unwrap(),
     );
     let mut metadata = HashMap::new();
     metadata.insert("name", DIRECTORY_NAME);
@@ -79,9 +81,9 @@ pub fn create_directory(tk: &oauth2::Token) -> Result<String> {
         .headers(header.clone())
         .json(&metadata)
         .send()
-        .chain_err(|| "Error in sending to create directory")?;
+        .context("Error in sending to create directory")?;
 
-    let response: FileCreateResponse = res.json().chain_err(|| "Error in decoding Response")?;
+    let response: FileCreateResponse = res.json().context("Error in decoding Response")?;
 
     Ok(response.id)
 }
@@ -108,7 +110,7 @@ fn parse_content_range(range: &str) -> Result<ContentRange> {
     if let Ok((_, l)) = content_range(range.as_bytes()) {
         Ok(l)
     } else {
-        Err(format!("invalid content_range, str was {}", range).into())
+        Err(anyhow!("invalid content_range, str was {}", range))
     }
 }
 
@@ -117,7 +119,7 @@ fn parse_content_range(range: &str) -> Result<ContentRange> {
 /// See: <https://developers.google.com/drive/v3/web/resumable-upload#resume-upload>
 fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
     println!("Starting resume upload");
-    let client = reqwest::Client::new();
+    let client = reqwest::blocking::Client::new();
     let mut header = h.clone();
     header.insert(CONTENT_RANGE, HeaderValue::from_static("*-*"));
     let res = client.put(loc).send()?;
@@ -125,7 +127,7 @@ fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
     if (res.status() == reqwest::StatusCode::OK) | (res.status() == reqwest::StatusCode::CREATED) {
         Ok(())
     } else if res.status() == reqwest::StatusCode::NOT_FOUND {
-        Err("Upload url not found, something is wrong".into())
+        Err(anyhow!("Upload url not found, something is wrong"))
     } else if res.status() == reqwest::StatusCode::PERMANENT_REDIRECT {
         println!("Getting correct status code");
         if let Some(ct) = res.headers().get(CONTENT_RANGE) {
@@ -147,28 +149,33 @@ fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
                 if res.is_ok() {
                     Ok(())
                 } else {
-                    Err("We tried one resume and we could not finish".into())
+                    Err(anyhow!("We tried one resume and we could not finish"))
                 }
             } else {
-                Err("content range spec could not work".into())
+                Err(anyhow!("content range spec could not work"))
             }
         } else {
-            Err("Could not find Content Range header".into())
+            Err(anyhow!("Could not find Content Range header"))
         }
     } else {
-        Err("Unknown response returned".into())
+        Err(anyhow!("Unknown response returned"))
     }
 }
 
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
 /// Currently we do not support resuming a broken upload and just error out.
-pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> Result<()> {
+pub fn upload_file(
+    tk: &oauth2::basic::BasicTokenResponse,
+    f: File,
+    paper: &Paper,
+    fileid: &str,
+) -> Result<()> {
     //getting the proper resumeable session URL
-    let client = reqwest::Client::new();
+    let client = reqwest::blocking::Client::new();
     let mut header = HeaderMap::new();
 
-    let authstring = "Bearer ".to_owned() + &tk.access_token;
+    let authstring = "Bearer ".to_owned() + &tk.access_token().secret();
     header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
 
     let filename = make_filename(paper);
@@ -187,7 +194,7 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
 
     let res = client
         .execute(query.unwrap())
-        .chain_err(|| "Error in getting resumeable url")?;
+        .context("Error in getting resumeable url")?;
 
     if res.status().is_success() {
         if let Some(loc) = res.headers().get(LOCATION) {
@@ -203,9 +210,9 @@ pub fn upload_file(tk: &oauth2::Token, f: File, paper: &Paper, fileid: &str) -> 
                 resume_upload(loc.to_str().unwrap(), fclone, &header)
             }
         } else {
-            Err("no location header found".into())
+            Err(anyhow!("no location header found"))
         }
     } else {
-        Err("Something went wrong with getting resumeable url".into())
+        Err(anyhow!("Something went wrong with getting resumeable url"))
     }
 }

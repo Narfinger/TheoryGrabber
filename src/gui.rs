@@ -1,15 +1,15 @@
-use cursive::Cursive;
-use cursive::views::Dialog;
-use cursive_table_view::{TableView, TableViewItem};
+use anyhow::Result;
 use cursive::traits::*;
+use cursive::views::Dialog;
+use cursive::Cursive;
+use cursive_table_view::{TableView, TableViewItem};
 //use errors::*;
-use std;
-use std::sync::atomic::{AtomicBool, Ordering};
 use crate::paper_dialog;
 use crate::types::{BasicColumn, Paper};
+use std;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 static SHOULD_WE_SAVE: AtomicBool = AtomicBool::new(false);
-
 
 impl TableViewItem<BasicColumn> for Paper {
     fn to_column(&self, column: BasicColumn) -> String {
@@ -37,10 +37,11 @@ impl TableViewItem<BasicColumn> for Paper {
 }
 
 fn table_on_submit(siv: &mut Cursive, row: usize, index: usize) {
-    let value: Paper =
-        siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+    let value: Paper = siv
+        .call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
             table.borrow_item(index).unwrap().clone()
-        }).unwrap();
+        })
+        .unwrap();
     siv.add_layer(paper_dialog::new(&value, row, index));
 }
 
@@ -73,25 +74,27 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
             })
             .column(BasicColumn::Published, "Published", |c| {
                 c.ordering(std::cmp::Ordering::Greater)
-            }).default_column(BasicColumn::Published);
+            })
+            .default_column(BasicColumn::Published);
 
         table.set_items(papers);
         let length = table.len();
-        table.set_selected_row(length -1);
+        table.set_selected_row(length - 1);
         table.set_on_submit(table_on_submit);
 
         siv.add_layer(
             Dialog::around(table.with_id("table").min_size((500, 80)))
                 .title("Table View")
                 .button("Download all and save", button_download_all)
-                .button("Quit", button_quit)
+                .button("Quit", button_quit),
         );
 
         siv.run();
 
         siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
             table.take_items()
-        }).unwrap()
+        })
+        .unwrap()
     };
 
     if SHOULD_WE_SAVE.load(Ordering::Relaxed) {

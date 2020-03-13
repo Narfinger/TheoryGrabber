@@ -1,6 +1,5 @@
-use crate::errors::*;
-use crate::types;
 use crate::types::{Paper, Source};
+use anyhow::Result;
 use chrono;
 use quick_xml;
 use quick_xml::events::Event;
@@ -32,7 +31,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
     };
 
     //this is super inefficient!
-    let mut reqreader = reqwest::get(ARXIV)?;
+    let mut reqreader = reqwest::blocking::get(ARXIV)?;
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp)?;
 
@@ -149,12 +148,12 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         .map(|p| {
             //println!("{:?}", p);
             Paper {
-                title: types::sanitize_title(&p.title.unwrap()),
+                title: crate::types::sanitize_title(&p.title.unwrap()),
                 description: p.summary.unwrap(),
                 published: chrono::DateTime::parse_from_rfc3339(&p.published.unwrap())
                     .unwrap()
                     .with_timezone(&chrono::Utc),
-                link: Url::parse(&p.link.unwrap()).unwrap(),
+                link: reqwest::Url::parse(&p.link.unwrap()).unwrap(),
                 source: Source::Arxiv,
                 authors: p.authors,
             }

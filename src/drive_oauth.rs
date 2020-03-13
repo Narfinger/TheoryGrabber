@@ -1,19 +1,23 @@
-use crate::errors::*;
-use serde_json as json;
-use oauth2;
-use url::Url;
-use chrono::{DateTime,Duration, Utc};
-use reqwest;
-use std::fs::File;
-use std::net::TcpListener;
-use std::io::{BufRead, BufReader, Write};
-use app_dirs::*;
 use crate::types::APP_INFO;
+use anyhow::Result;
+use app_dirs::*;
+use chrono::{DateTime, Utc};
+use oauth2::prelude::*;
+use oauth2::{
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
+    TokenResponse, TokenUrl,
+};
+use reqwest;
+use serde_json as json;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
+use std::net::TcpListener;
+use std::time::Duration;
 
 /// Represents a token and the date it was created
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Token {
-    pub tk: oauth2::Token,
+    pub tk: oauth2::basic::BasicTokenResponse,
     created: DateTime<Utc>,
 }
 
@@ -23,9 +27,12 @@ pub trait Expireing {
 
 impl Expireing for Token {
     fn expired(&self) -> bool {
-        Utc::now() >= self.created.checked_add_signed(
-            //we assume seconds here because I do not know what it is in
-            Duration::seconds(i64::from(self.tk.expires_in.unwrap_or(0)))).unwrap()
+        let dur = Duration::new(self.tk.expires_in().map(|s| s.as_secs()).unwrap_or(0), 0);
+        Utc::now()
+            .checked_add_signed(chrono::Duration::from_std(dur).unwrap())
+            .map(|d| d >= self.created)
+            .unwrap_or(true)
+        //we assume seconds here because I do not know what it is in
     }
 }
 
@@ -47,13 +54,25 @@ fn get_client_secrets() -> Installed {
 }
 
 /// Initital authorization to get the token
-fn authorize() -> Result<oauth2::Token> {
+fn authorize() -> Result<oauth2::basic::BasicTokenResponse> {
     let secret = get_client_secrets();
-    let mut config = oauth2::Config::new(secret.client_id, secret.client_secret, secret.auth_uri, secret.token_uri);
-    config = config.add_scope("https://www.googleapis.com/auth/drive.file");
-    config = config.set_redirect_url("http://localhost:8080");
-    let authorize_url = config.authorize_url();
-    println!("Open this URL in your browser:\n{}\n", authorize_url.to_string());
+    let mut config = oauth2::basic::BasicClient::new(
+        ClientId::new(secret.client_id),
+        Some(ClientSecret::new(secret.client_secret)),
+        AuthUrl::new(url::Url::parse(&secret.auth_uri).unwrap()),
+        Some(TokenUrl::new(url::Url::parse(&secret.token_uri).unwrap())),
+    );
+    config = config.add_scope(Scope::new(
+        "https://www.googleapis.com/auth/drive.file".to_string(),
+    ));
+    config = config.set_redirect_url(RedirectUrl::new(
+        url::Url::parse("http://localhost:8080").unwrap(),
+    ));
+    let (authorize_url, _) = config.authorize_url(CsrfToken::new_random);
+    println!(
+        "Open this URL in your browser:\n{}\n",
+        authorize_url.as_str()
+    );
     let mut code = String::new();
 
     // A very naive implementation of the redirect server.
@@ -67,12 +86,16 @@ fn authorize() -> Result<oauth2::Token> {
                 reader.read_line(&mut request_line).unwrap();
 
                 let redirect_url = request_line.split_whitespace().nth(1).unwrap();
-                let url = Url::parse(&("http://localhost".to_string() + redirect_url)).unwrap();
+                let url =
+                    url::Url::parse(&("http://localhost".to_string() + redirect_url)).unwrap();
 
-                let code_pair = url.query_pairs().find(|pair| {
-                    let &(ref key, _) = pair;
-                    key == "code"
-                }).unwrap();
+                let code_pair = url
+                    .query_pairs()
+                    .find(|pair| {
+                        let &(ref key, _) = pair;
+                        key == "code"
+                    })
+                    .unwrap();
 
                 let (_, value) = code_pair;
                 code = value.into_owned();
@@ -82,20 +105,28 @@ fn authorize() -> Result<oauth2::Token> {
 
             // The server will terminate itself after collecting the first code.
             break;
-            }
-        };
-    config.exchange_code(code).map_err(std::convert::Into::into)
+        }
+    }
+    config
+        .exchange_code(AuthorizationCode::new(code))
+        .map_err(|_| anyhow!("Some authorization error"))
 }
 
 /// Refreshes a token with the saved (`oldtocken`) refresh token
 fn refresh(oldtoken: &Token) -> Result<Token> {
     let secret = get_client_secrets();
-    let params = [("refresh_token", oldtoken.tk.refresh_token.clone().unwrap()),
-                    ("client_id", secret.client_id),
-                    ("client_secret", secret.client_secret),
-                    ("grant_type", String::from("refresh_token"))];
-    let client = reqwest::Client::new();
-    let res = client.post("https://www.googleapis.com/oauth2/v4/token")
+    let params = [
+        (
+            "refresh_token",
+            oldtoken.tk.refresh_token().unwrap().secret().clone(),
+        ),
+        ("client_id", secret.client_id),
+        ("client_secret", secret.client_secret),
+        ("grant_type", String::from("refresh_token")),
+    ];
+    let client = reqwest::blocking::Client::new();
+    let res = client
+        .post("https://www.googleapis.com/oauth2/v4/token")
         .form(&params)
         .send()?;
     #[derive(Deserialize)]
@@ -107,22 +138,27 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
 
     //changing to new token, take the old one as a copy
     let mut newtk = oldtoken.tk.clone();
-    newtk.access_token = new_response.access_token;
-    newtk.expires_in = Some(new_response.expires_in);
-    Ok(Token { created: Utc::now(), tk: newtk })
+    newtk.set_access_token(oauth2::AccessToken::new(new_response.access_token));
+    newtk.set_expires_in(Some(new_response.expires_in.into()));
+    Ok(Token {
+        created: Utc::now(),
+        tk: newtk,
+    })
 }
 
 /// Gets the oauth2 token, either saved in tk.json or creates a new. if not current, refreshes it
-pub fn setup_oauth() -> Result<oauth2::Token> {
+pub fn setup_oauth() -> Result<oauth2::basic::BasicTokenResponse> {
     let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
     path.push("tk.json");
     let f = File::open(&path);
     let tk = if let Ok(f7) = f {
         json::from_reader(f7)
-    }
-    else {
+    } else {
         let f = File::create(&path)?;
-        let tk = Token{ tk: authorize().unwrap(), created: Utc::now()};
+        let tk = Token {
+            tk: authorize().unwrap(),
+            created: Utc::now(),
+        };
         json::to_writer(f, &tk).expect("Could not write token");
         Ok(tk)
     }?;

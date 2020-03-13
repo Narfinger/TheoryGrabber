@@ -1,4 +1,5 @@
 use crate::types::{print_authors, BasicColumn, Paper};
+use anyhow::Result;
 use cursive::direction::Direction;
 use cursive::event::{Event, EventResult};
 use cursive::traits::View;
@@ -33,11 +34,7 @@ impl View for PaperDialog {
     fn take_focus(&mut self, source: Direction) -> bool {
         self.d.take_focus(source)
     }
-    fn call_on_any<'a>(
-        &mut self,
-        selector: &Selector,
-        callback: Box<dyn FnMut(&mut (dyn Any)) + 'a>,
-    ) {
+    fn call_on_any<'a>(&mut self, selector: &Selector, callback: &mut FnMut(&mut (dyn Any))) {
         self.d.call_on_any(selector, callback);
     }
     fn focus_view(&mut self, selector: &Selector) -> Result<(), ()> {
