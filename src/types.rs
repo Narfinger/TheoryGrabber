@@ -161,7 +161,7 @@ pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> 
 
 #[test]
 fn fuzzy_exists_test() {
-    let exurl = url::Url::parse("https://www.example.com").unwrap();
+    let exurl = reqwest::Url::parse("https://www.example.com").unwrap();
     let p1 = Paper {
         title: String::from("Test1"),
         description: String::from("a"),
@@ -201,7 +201,7 @@ fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
 
 #[test]
 fn dedup_test() {
-    let exurl = url::Url::parse("https://www.example.com").unwrap();
+    let exurl = reqwest::Url::parse("https://www.example.com").unwrap();
     let p1 = Paper {
         title: String::from("Test1"),
         description: String::from("a"),
