@@ -76,7 +76,7 @@ pub fn create_directory(tk: &oauth2::basic::BasicTokenResponse) -> Result<String
     metadata.insert("name", DIRECTORY_NAME);
     metadata.insert("mimeType", "application/vnd.google-apps.folder");
 
-    let mut res = client
+    let res = client
         .post(DIRECTORY_URL)
         .headers(header.clone())
         .json(&metadata)

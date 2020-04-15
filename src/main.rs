@@ -57,8 +57,11 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     );
     progressbar.enable_steady_tick(100);
 
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("TheoryGrabber")
+        .build()?;
     for i in progressbar.wrap_iter(papers.iter()) {
-        let mut response = reqwest::blocking::get(i.link.clone())?;
+        let mut response = client.get(i.link.clone()).send()?;
         let filename = Path::new("").with_file_name(&i.title).with_extension("pdf");
         let savefile = dir.path().join(&filename);
         let mut file = File::create(savefile.clone()).context(anyhow!(

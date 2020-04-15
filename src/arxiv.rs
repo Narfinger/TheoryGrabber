@@ -31,7 +31,10 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
     };
 
     //this is super inefficient!
-    let mut reqreader = reqwest::blocking::get(ARXIV)?;
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("TheoryGrabber")
+        .build()?;
+    let mut reqreader = client.get(ARXIV).send()?;
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp)?;
 
