@@ -62,6 +62,19 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
         .build()?;
     for i in progressbar.wrap_iter(papers.iter()) {
         let mut response = client.get(i.link.clone()).send()?;
+        let contenttype = response.headers().get(reqwest::header::CONTENT_TYPE);
+        if contenttype
+            != Some(
+                &reqwest::header::HeaderValue::from_str("application/pdf")
+                    .expect("Error in parsing header"),
+            )
+        {
+            return Err(anyhow!(
+                "We got the wrong content type for {}, type: {:?}",
+                &i.link,
+                contenttype
+            ));
+        }
         let filename = Path::new("").with_file_name(&i.title).with_extension("pdf");
         let savefile = dir.path().join(&filename);
         let mut file = File::create(savefile.clone()).context(anyhow!(
@@ -141,6 +154,7 @@ fn run() -> Result<()> {
             println!("No papers to download");
             return config::write_now();
         }
+        println!("papers_to_download: {:?}", papers_to_download);
 
         if let Ok(dir) = TempDir::new("TheoryGrabber") {
             let files = download_papers(&papers_to_download, &dir).context("Files error")?;
@@ -158,7 +172,7 @@ fn run() -> Result<()> {
                     .context("Uploading function has error")?;
             }
             //progressbar.finish();
-            config::write_now()?;
+            //config::write_now()?;
         }
     } else {
         println!("Nothing to download and we are not saving.");
