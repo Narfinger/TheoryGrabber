@@ -15,7 +15,7 @@ impl TableViewItem<BasicColumn> for Paper {
     fn to_column(&self, column: BasicColumn) -> String {
         match column {
             BasicColumn::Title => {
-                let mut res = self.title.replace("\n", "").to_owned();
+                let mut res = self.title.replace("\n", "");
                 res.truncate(120);
                 res
             }

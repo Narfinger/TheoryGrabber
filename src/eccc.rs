@@ -14,7 +14,6 @@ use select::node::Node;
 use select::predicate::{And, Attr, Name};
 use std;
 use std::io::Read;
-use url;
 
 static ECCC: &str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &str = "https://eccc.weizmann.ac.il";
@@ -245,16 +244,16 @@ fn to_paper(
 fn parse_single_div(div: Node) -> Result<RoughPaper> {
     //testing if the unwraps are ok
     //normally I would use different way to do this but I don't quite know how to make it work here
-    if div.find(Name("u")).nth(0).is_none() {
+    if div.find(Name("u")).next().is_none() {
         return Err(anyhow!("Could not find u name"));
     }
-    if div.find(Name("a")).nth(0).is_none() {
+    if div.find(Name("a")).next().is_none() {
         return Err(anyhow!("Could not find a name"));
     }
-    if div.find(Name("a")).nth(0).unwrap().attr("href").is_none() {
+    if div.find(Name("a")).next().unwrap().attr("href").is_none() {
         return Err(anyhow!("a name does not have href"));
     }
-    if div.find(Name("h4")).nth(0).is_none() {
+    if div.find(Name("h4")).next().is_none() {
         return Err(anyhow!("could not find h4"));
     }
 
@@ -262,9 +261,9 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
         return Err(anyhow!("authors not found"));
     }
 
-    let id_and_date_raw = div.find(Name("u")).nth(0).unwrap().text();
-    let link_raw = div.find(Name("a")).nth(0).unwrap().attr("href").unwrap();
-    let title_raw = div.find(Name("h4")).nth(0).unwrap().text();
+    let id_and_date_raw = div.find(Name("u")).next().unwrap().text();
+    let link_raw = div.find(Name("a")).next().unwrap().attr("href").unwrap();
+    let title_raw = div.find(Name("h4")).next().unwrap().text();
 
     let authors_raw = div.children().nth(1).unwrap().text();
 
@@ -278,7 +277,7 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 
     Ok(RoughPaper {
         title: title.to_string(),
-        details_link: link.to_string(),
+        details_link: link,
         rough_published: date,
         authors,
     })
@@ -323,7 +322,7 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
     let parsedoc = Document::from(res_string.as_str());
     let div = parsedoc
         .find(And(Name("div"), Attr("id", "box")))
-        .nth(0)
+        .next()
         .unwrap();
 
     let id_and_date_text = div.children().nth(1).unwrap().text();

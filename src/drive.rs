@@ -78,7 +78,7 @@ pub fn create_directory(tk: &oauth2::basic::BasicTokenResponse) -> Result<String
 
     let res = client
         .post(DIRECTORY_URL)
-        .headers(header.clone())
+        .headers(header)
         .json(&metadata)
         .send()
         .context("Error in sending to create directory")?;

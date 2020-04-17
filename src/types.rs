@@ -10,7 +10,6 @@ use std;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
-use url;
 
 pub const APP_INFO: AppInfo = AppInfo {
     name: "TheoryGrabber",

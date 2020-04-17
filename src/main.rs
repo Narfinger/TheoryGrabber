@@ -154,7 +154,6 @@ fn run() -> Result<()> {
             println!("No papers to download");
             return config::write_now();
         }
-        println!("papers_to_download: {:?}", papers_to_download);
 
         if let Ok(dir) = TempDir::new("TheoryGrabber") {
             let files = download_papers(&papers_to_download, &dir).context("Files error")?;
