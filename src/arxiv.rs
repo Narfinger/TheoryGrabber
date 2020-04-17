@@ -68,45 +68,44 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                     tag = Tag::Entry;
                 }
             },
-            Ok(Event::Start(ref e)) => {
-                match e.name() {
-                    b"entry" => {
-                        tag = Tag::Entry;
-                        cur_paper = TmpPaper {
-                            published: None,
-                            title: None,
-                            summary: None,
-                            link: None,
-                            authors: Vec::new(),
-                        };
-                    }
-                    b"published" => {
-                        tag = Tag::Published;
-                    }
-                    b"title" => {
-                        tag = Tag::Title;
-                    }
-                    b"summary" => {
-                        tag = Tag::Summary;
-                    }
-                    b"author" => {
-                        tag = Tag::Author;
-                    }
-                    b"link" => {
-                        let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
-                        let it = bl
-                            .find(|i| i.as_ref().unwrap().key == b"href")
-                            .unwrap()
-                            .unwrap()
-                            .value;
-                        //let itowned: Vec<u8> = it.to_owned();
-                        let res: &str = std::str::from_utf8(&it).unwrap();
-                        let ress = res.to_string().clone();
-                        cur_paper.link = Some(ress);
-                    }
-                    _ => {}
+            Ok(Event::Start(ref e)) => match e.name() {
+                b"entry" => {
+                    tag = Tag::Entry;
+                    cur_paper = TmpPaper {
+                        published: None,
+                        title: None,
+                        summary: None,
+                        link: None,
+                        authors: Vec::new(),
+                    };
                 }
-            }
+                b"published" => {
+                    tag = Tag::Published;
+                }
+                b"title" => {
+                    tag = Tag::Title;
+                }
+                b"summary" => {
+                    tag = Tag::Summary;
+                }
+                b"author" => {
+                    tag = Tag::Author;
+                }
+                b"link" => {
+                    let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
+                    let it = bl
+                        .find(|i| i.as_ref().unwrap().key == b"href")
+                        .unwrap()
+                        .unwrap()
+                        .value;
+                    let res: &str = std::str::from_utf8(&it).expect("Error getting string");
+                    let mut url = Url::parse(&res).expect("Error parsing url");
+                    url.set_host(Some("export.arxiv.org"))
+                        .expect("Could not replace hostname");
+                    cur_paper.link = Some(url.to_string());
+                }
+                _ => {}
+            },
             Ok(Event::Empty(e)) => {
                 if let b"link" = e.name() {
                     let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
@@ -115,10 +114,11 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                         .unwrap()
                         .unwrap()
                         .value;
-                    //let itowned: Vec<u8> = it.to_owned();
-                    let res: &str = std::str::from_utf8(&it).unwrap();
-                    let ress = res.to_string().clone();
-                    cur_paper.link = Some(ress);
+                    let res: &str = std::str::from_utf8(&it).expect("Error getting string");
+                    let mut url = Url::parse(&res).expect("Error parsing url");
+                    url.set_host(Some("export.arxiv.org"))
+                        .expect("Could not replace hostname");
+                    cur_paper.link = Some(url.to_string());
                 }
             }
             Ok(Event::Text(e)) => {
