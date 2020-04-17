@@ -170,8 +170,8 @@ fn run() -> Result<()> {
                 drive::upload_file(&tk, f, i.paper, &directory_id)
                     .context("Uploading function has error")?;
             }
-            //progressbar.finish();
-            //config::write_now()?;
+            progressbar.finish();
+            config::write_now()?;
         }
     } else {
         println!("Nothing to download and we are not saving.");
