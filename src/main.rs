@@ -9,6 +9,9 @@ extern crate chrono_tz;
 extern crate cursive;
 extern crate cursive_table_view;
 extern crate indicatif;
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
 extern crate rayon;
 extern crate reqwest;
 extern crate select;
@@ -82,6 +85,7 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
             filename.clone(),
             savefile.clone()
         ))?;
+        info!("Downloading {} onto {:?}", &i.title, &savefile);
         copy(&mut response, &mut file)?;
 
         files.push(DownloadedPaper {
@@ -111,8 +115,10 @@ fn get_and_filter_papers() -> Result<Vec<Paper>> {
     let mut papers = handle.join().unwrap()?; //I do not like that we have to use unwrap here but I do not know how to use ? with error_chain with these types
 
     papers.append(&mut eccc_papers);
+    info!("All papers we found but not filtered: {:?}", &papers);
 
     let mut papers_filtered = types::filter_papers(papers, utc);
+    info!("Filtered papers: {:?}", &papers_filtered);
     progress_fetch_bar.set_message("Sorting and Deduping");
     papers_filtered.sort_unstable();
     types::dedup_papers(&mut papers_filtered);
@@ -180,6 +186,7 @@ fn run() -> Result<()> {
 }
 
 fn main() {
+    pretty_env_logger::init();
     let matches = App::new("TheoryGrabber")
         .version(crate_version!())
         .author("Narfinger")

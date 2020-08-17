@@ -37,7 +37,7 @@ impl fmt::Display for Source {
 }
 
 /// Struct for denoting a paper.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Paper {
     /// The title of the paper.
     pub title: String,
@@ -51,6 +51,18 @@ pub struct Paper {
     pub published: chrono::DateTime<chrono::Utc>,
     /// A list of authors which can be in arbitrary order.
     pub authors: Vec<String>,
+}
+
+impl std::fmt::Display for Paper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.title)
+    }
+}
+
+impl std::fmt::Debug for Paper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {}, {})", self.source, self.title, self.published)
+    }
 }
 
 impl Ord for Paper {

@@ -363,6 +363,8 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     // wrong results will be removed in the second filter
     let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day() - 1);
 
+    info!("Found rough papers: {:?}", &rough_papers);
+
     rough_papers
         .par_iter()
         .filter(|p| p.rough_published >= naive_filter_date)

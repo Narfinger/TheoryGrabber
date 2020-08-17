@@ -172,6 +172,7 @@ pub fn upload_file(
     fileid: &str,
 ) -> Result<()> {
     //getting the proper resumeable session URL
+    info!("Uploading {}", &paper.title);
     let client = reqwest::blocking::Client::new();
     let mut header = HeaderMap::new();
 

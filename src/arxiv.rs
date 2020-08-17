@@ -145,6 +145,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         }
     }
 
+    info!("Found arxiv papers: {:?}", &entries);
     //converting tmp to real and testing
     Ok(entries
         .into_iter()
