@@ -359,12 +359,21 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
 /// This parses the whole ECCC by first looking at the current year, getting these details and filtering and then parsing the details pages to construct full papers.
 pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let rough_papers = parse_eccc_summary()?;
-    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day());
+    // the -1 should not be necessary but we might loose a day in the utc to naivedate conversion.
+    // wrong results will be removed in the second filter
+    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day() - 1);
 
     rough_papers
         .par_iter()
         .filter(|p| p.rough_published >= naive_filter_date)
         .map(parse_eccc_details)
+        .filter(|p| {
+            if let Ok(p) = p {
+                p.published >= utc
+            } else {
+                true
+            }
+        })
         .collect::<Result<Vec<Paper>>>()
 }
 
