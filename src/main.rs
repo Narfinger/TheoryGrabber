@@ -152,13 +152,15 @@ fn run() -> Result<()> {
 
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
-        return config::write_now();
+        //return config::write_now();
     }
 
+    let is_filtered_empty = filtered_papers.is_empty();
+    let last_paper = filtered_papers.first().cloned();
     if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
-        if papers_to_download.is_empty() {
+        if papers_to_download.is_empty() && !is_filtered_empty {
             println!("No papers to download");
-            return config::write_now();
+            return config::write_paper_published(last_paper);
         }
 
         if let Ok(dir) = TempDir::new("TheoryGrabber") {
@@ -177,7 +179,8 @@ fn run() -> Result<()> {
                     .context("Uploading function has error")?;
             }
             progressbar.finish();
-            config::write_now()?;
+            config::write_paper_published(last_paper)?;
+            //config::write_now()?;
         }
     } else {
         println!("Nothing to download and we are not saving.");

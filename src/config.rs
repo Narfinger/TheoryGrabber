@@ -1,4 +1,4 @@
-use crate::types::APP_INFO;
+use crate::types::{Paper, APP_INFO};
 use anyhow::{Context, Result};
 use app_dirs::*;
 use chrono;
@@ -60,6 +60,11 @@ fn write_config_time(time: chrono::DateTime<chrono::Utc>) -> Result<()> {
 /// Writes the current time to the config file. If no config file is found, we do not write the current time!
 pub fn write_now() -> Result<()> {
     write_config_time(chrono::Utc::now()).context("Cannot write current time")
+}
+
+pub fn write_paper_published(p: Option<Paper>) -> Result<()> {
+    write_config_time(p.map_or(chrono::Utc::now(), |p| p.published))
+        .context("Cannot write current time")
 }
 
 /// Reads the directory id from the config file and returns it.
