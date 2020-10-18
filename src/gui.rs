@@ -36,7 +36,7 @@ impl TableViewItem<BasicColumn> for Paper {
 
 fn table_on_submit(siv: &mut Cursive, row: usize, index: usize) {
     let value: Paper = siv
-        .call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+        .call_on_name("table", move |table: &mut TableView<Paper, BasicColumn>| {
             table.borrow_item(index).unwrap().clone()
         })
         .unwrap();
@@ -45,7 +45,7 @@ fn table_on_submit(siv: &mut Cursive, row: usize, index: usize) {
 
 /// Clears the table and quits the gui.
 fn button_quit(siv: &mut Cursive) {
-    siv.call_on_id("table", move |table: &mut TableView<Paper, BasicColumn>| {
+    siv.call_on_name("table", move |table: &mut TableView<Paper, BasicColumn>| {
         table.clear();
     });
     siv.clear();
@@ -81,7 +81,7 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
         table.set_on_submit(table_on_submit);
 
         siv.add_layer(
-            Dialog::around(table.with_id("table").min_size((500, 80)))
+            Dialog::around(table.with_name("table").min_size((500, 80)))
                 .title("Table View")
                 .button("Download all and save", button_download_all)
                 .button("Quit", button_quit),
@@ -89,7 +89,7 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
 
         siv.run();
 
-        siv.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+        siv.call_on_name("table", |table: &mut TableView<Paper, BasicColumn>| {
             table.take_items()
         })
         .unwrap()

@@ -34,7 +34,7 @@ impl View for PaperDialog {
     fn take_focus(&mut self, source: Direction) -> bool {
         self.d.take_focus(source)
     }
-    fn call_on_any<'a>(&mut self, selector: &Selector, callback: &mut FnMut(&mut (dyn Any))) {
+    fn call_on_any<'a>(&mut self, selector: &Selector, callback: &mut dyn FnMut(&mut (dyn Any))) {
         self.d.call_on_any(selector, callback);
     }
     fn focus_view(&mut self, selector: &Selector) -> Result<(), ()> {
@@ -71,7 +71,7 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
             //s.on_event(cursive::event::Event::Key(cursive::event::Key::Enter));
         })*/
         .button("Delete", move |s| {
-            s.call_on_id("table", |table: &mut TableView<Paper, BasicColumn>| {
+            s.call_on_name("table", |table: &mut TableView<Paper, BasicColumn>| {
                 table.remove_item(index);
             });
             s.pop_layer();
