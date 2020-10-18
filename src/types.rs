@@ -1,12 +1,10 @@
 use app_dirs::*;
-use chrono;
 use chrono::Datelike;
 use chrono::Duration;
 #[cfg(test)]
 use chrono::Utc;
 use chrono::Weekday;
 use chrono_tz::America::New_York;
-use std;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
@@ -121,13 +119,13 @@ fn filter_test() {
     let p3 = Paper {
         title: String::from("Test3"),
         description: String::from("c"),
-        link: exurl.clone(),
+        link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
         source: Source::Arxiv,
     };
 
-    let vec = vec![p1.clone(), p2.clone(), p3.clone()];
+    let vec = vec![p1, p2.clone(), p3.clone()];
     assert_eq!(filter_papers(vec, now), vec![p2, p3]);
 }
 
@@ -192,7 +190,7 @@ fn fuzzy_exists_test() {
     let p2 = Paper {
         title: String::from("Test1 t"),
         description: String::from("c"),
-        link: exurl.clone(),
+        link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
         source: Source::Arxiv,
@@ -232,7 +230,7 @@ fn dedup_test() {
     let p2 = Paper {
         title: String::from("Test1 t"),
         description: String::from("c"),
-        link: exurl.clone(),
+        link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
         source: Source::Arxiv,
@@ -240,7 +238,7 @@ fn dedup_test() {
 
     let mut v = vec![p1.clone(), p1eq, p2.clone()];
     dedup_papers(&mut v);
-    assert_eq!(vec![p1.clone(), p2.clone()], v);
+    assert_eq!(vec![p1, p2], v);
 }
 
 /// Remove papers that are doubled in the vector and keep the ECCC version. The test cases are probably the best example.

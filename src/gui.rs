@@ -1,4 +1,3 @@
-use anyhow::Result;
 use cursive::traits::*;
 use cursive::views::Dialog;
 use cursive::Cursive;
@@ -6,7 +5,6 @@ use cursive_table_view::{TableView, TableViewItem};
 //use errors::*;
 use crate::paper_dialog;
 use crate::types::{BasicColumn, Paper};
-use std;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static SHOULD_WE_SAVE: AtomicBool = AtomicBool::new(false);

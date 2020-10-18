@@ -1,11 +1,7 @@
 use crate::types::{Paper, Source};
 use anyhow::Result;
-use chrono;
-use quick_xml;
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use reqwest;
-use std;
 use std::io::Read;
 use url::Url;
 

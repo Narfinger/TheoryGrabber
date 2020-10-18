@@ -7,7 +7,6 @@ use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
     TokenResponse, TokenUrl,
 };
-use reqwest;
 use serde_json as json;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};

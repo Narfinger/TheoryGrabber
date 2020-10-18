@@ -1991,7 +1991,7 @@ dependencies = [
 
 [[package]]
 name = "theory_grabber"
-version = "0.9.3"
+version = "0.9.5"
 dependencies = [
  "anyhow 1.0.32 (registry+https://github.com/rust-lang/crates.io-index)",
  "app_dirs 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
