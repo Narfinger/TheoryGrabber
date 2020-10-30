@@ -24,6 +24,7 @@ extern crate toml;
 extern crate url;
 #[macro_use]
 extern crate nom;
+extern crate console;
 extern crate oauth2;
 extern crate tokio_core;
 
@@ -180,7 +181,8 @@ fn run() -> Result<()> {
     let is_filtered_empty = filtered_papers.is_empty();
     if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
         if papers_to_download.is_empty() && !is_filtered_empty {
-            println!("No papers to download");
+            println!("No papers to download ({})", console::Emoji("✅", ""));
+            return Ok(());
             //return config::write_paper_published(last_paper);
         }
 
@@ -205,7 +207,11 @@ fn run() -> Result<()> {
             //config::write_now()?;
         }
     } else {
-        println!("Nothing to download and we are not saving.");
+        println!(
+            "Nothing to download ({}) and we are not saving ({}).",
+            console::Emoji("❌", ""),
+            console::Emoji("❌", "")
+        );
     }
     Ok(())
 }
