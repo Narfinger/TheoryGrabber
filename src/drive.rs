@@ -1,4 +1,3 @@
-use crate::oauth2::prelude::SecretNewType;
 use crate::oauth2::TokenResponse;
 use crate::types::Paper;
 use anyhow::{Context, Result};

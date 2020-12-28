@@ -2,7 +2,7 @@ use crate::types::APP_INFO;
 use anyhow::Result;
 use app_dirs::*;
 use chrono::{DateTime, Utc};
-use oauth2::prelude::*;
+use oauth2::reqwest::http_client;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
     TokenResponse, TokenUrl,
@@ -55,19 +55,19 @@ fn get_client_secrets() -> Installed {
 /// Initital authorization to get the token
 fn authorize() -> Result<oauth2::basic::BasicTokenResponse> {
     let secret = get_client_secrets();
-    let mut config = oauth2::basic::BasicClient::new(
+    let config = oauth2::basic::BasicClient::new(
         ClientId::new(secret.client_id),
         Some(ClientSecret::new(secret.client_secret)),
-        AuthUrl::new(url::Url::parse(&secret.auth_uri).unwrap()),
-        Some(TokenUrl::new(url::Url::parse(&secret.token_uri).unwrap())),
-    );
-    config = config.add_scope(Scope::new(
-        "https://www.googleapis.com/auth/drive.file".to_string(),
-    ));
-    config = config.set_redirect_url(RedirectUrl::new(
-        url::Url::parse("http://localhost:8080").unwrap(),
-    ));
-    let (authorize_url, _) = config.authorize_url(CsrfToken::new_random);
+        AuthUrl::new(secret.auth_uri).unwrap(),
+        Some(TokenUrl::new(secret.token_uri).unwrap()),
+    )
+    .set_redirect_url(RedirectUrl::new("http://localhost:8080".to_string()).unwrap());
+    let (authorize_url, _) = config
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new(
+            "https://www.googleapis.com/auth/drive.file".to_string(),
+        ))
+        .url();
     println!(
         "Open this URL in your browser:\n{}\n",
         authorize_url.as_str()
@@ -108,6 +108,7 @@ fn authorize() -> Result<oauth2::basic::BasicTokenResponse> {
     }
     config
         .exchange_code(AuthorizationCode::new(code))
+        .request(http_client)
         .map_err(|_| anyhow!("Some authorization error"))
 }
 
@@ -138,7 +139,8 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
     //changing to new token, take the old one as a copy
     let mut newtk = oldtoken.tk.clone();
     newtk.set_access_token(oauth2::AccessToken::new(new_response.access_token));
-    newtk.set_expires_in(Some(new_response.expires_in.into()));
+    let expires: u64 = new_response.expires_in.into();
+    newtk.set_expires_in(Some(&Duration::from_secs(expires)));
     Ok(Token {
         created: Utc::now(),
         tk: newtk,
