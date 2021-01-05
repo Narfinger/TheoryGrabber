@@ -347,7 +347,10 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let rough_papers = parse_eccc_summary()?;
     // the -1 should not be necessary but we might loose a day in the utc to naivedate conversion.
     // wrong results will be removed in the second filter
-    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), utc.day() - 1);
+    let days = if utc.day() ==1 {//if we ask on the first, we obviously cannot go negative.
+        1
+    } else { utc.day()-1};
+    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), days);
 
     info!("Found rough papers: {:?}", &rough_papers);
 
