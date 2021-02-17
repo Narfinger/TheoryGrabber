@@ -162,55 +162,64 @@ fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
 /// Currently we do not support resuming a broken upload and just error out.
-pub fn upload_file(
-    tk: &oauth2::basic::BasicTokenResponse,
+pub fn upload_file_or_local(
+    tk: &Option<oauth2::basic::BasicTokenResponse>,
     f: File,
     paper: &Paper,
-    fileid: &str,
+    fileid: &Option<String>,
+    local_storage: &Option<String>,
 ) -> Result<()> {
-    //getting the proper resumeable session URL
-    info!("Uploading {}", &paper.title);
-    let client = reqwest::blocking::Client::new();
-    let mut header = HeaderMap::new();
-
-    let authstring = "Bearer ".to_owned() + &tk.access_token().secret();
-    header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
-
     let filename = make_filename(paper);
+    if let Some(dir) = local_storage {
+        let mut file = f.try_clone().unwrap();
+        let path = std::path::Path::new(dir).with_file_name(filename);
+        let mut new_file = File::create(path)?;
+        std::io::copy(&mut file, &mut new_file)?;
+        Ok(())
+    } else {
+        let tk = tk.as_ref().expect("No local storage and no token");
+        //getting the proper resumeable session URL
+        info!("Uploading {}", &paper.title);
+        let client = reqwest::blocking::Client::new();
+        let mut header = HeaderMap::new();
 
-    let metadata = FileUploadJSON {
-        name: filename,
-        mime_type: "application/pdf".to_string(),
-        parents: vec![String::from(fileid)],
-    };
+        let authstring = "Bearer ".to_owned() + &tk.access_token().secret();
+        header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
 
-    let query = client
-        .post(UPLOAD_URL)
-        .headers(header.clone())
-        .json(&metadata)
-        .build();
+        let metadata = FileUploadJSON {
+            name: filename,
+            mime_type: "application/pdf".to_string(),
+            parents: vec![String::from(fileid.as_ref().unwrap())],
+        };
 
-    let res = client
-        .execute(query.unwrap())
-        .context("Error in getting resumeable url")?;
+        let query = client
+            .post(UPLOAD_URL)
+            .headers(header.clone())
+            .json(&metadata)
+            .build();
 
-    if res.status().is_success() {
-        if let Some(loc) = res.headers().get(LOCATION) {
-            let fclone = f.try_clone().unwrap();
-            let upload_res = client
-                .put(loc.to_str().unwrap())
-                .headers(header.clone())
-                .body(f)
-                .send();
-            if upload_res.is_ok() {
-                Ok(())
+        let res = client
+            .execute(query.unwrap())
+            .context("Error in getting resumeable url")?;
+
+        if res.status().is_success() {
+            if let Some(loc) = res.headers().get(LOCATION) {
+                let fclone = f.try_clone().unwrap();
+                let upload_res = client
+                    .put(loc.to_str().unwrap())
+                    .headers(header.clone())
+                    .body(f)
+                    .send();
+                if upload_res.is_ok() {
+                    Ok(())
+                } else {
+                    resume_upload(loc.to_str().unwrap(), fclone, &header)
+                }
             } else {
-                resume_upload(loc.to_str().unwrap(), fclone, &header)
+                Err(anyhow!("no location header found"))
             }
         } else {
-            Err(anyhow!("no location header found"))
+            Err(anyhow!("Something went wrong with getting resumeable url"))
         }
-    } else {
-        Err(anyhow!("Something went wrong with getting resumeable url"))
     }
 }

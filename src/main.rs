@@ -37,7 +37,6 @@ pub mod gui;
 pub mod paper_dialog;
 pub mod types;
 
-use crate::config::ConfigImpl;
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
 use clap::{App, Arg};
@@ -113,7 +112,11 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
 
     let c = config.clone();
     let handle = thread::spawn(move || {
-        let time = config::time_or_default(c.read().unwrap().last_checked_arxiv);
+        let time = c
+            .read()
+            .unwrap()
+            .last_checked_arxiv
+            .unwrap_or(chrono::Utc::now());
         let arxiv_papers = arxiv::parse_arxiv().map(|p| types::filter_papers(p, time));
         if let Ok(mut arxiv_papers) = arxiv_papers {
             arxiv_papers.sort_unstable();
@@ -126,7 +129,11 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
             arxiv_papers
         }
     });
-    let eccc_time = config::time_or_default(config.read().unwrap().last_checked_eccc);
+    let eccc_time = config
+        .read()
+        .unwrap()
+        .last_checked_eccc
+        .unwrap_or(chrono::Utc::now());
     let eccc_papers = eccc::parse_eccc(eccc_time).context("Error in parsing eccc")?;
     let mut eccc_papers = types::filter_papers(eccc_papers, eccc_time);
     eccc_papers.sort_unstable();
@@ -152,7 +159,7 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
 
 fn setup() -> Result<(oauth2::basic::BasicTokenResponse, String)> {
     let tk = drive_oauth::setup_oauth()?;
-    let directory_id = if let Ok(id) = config::read_directory_id() {
+    let directory_id = if let Some(id) = config::read_directory_id() {
         id
     } else {
         let id = drive::create_directory(&tk)?;
@@ -168,9 +175,13 @@ fn run() -> Result<()> {
     println!("sub implement dialog for deleting to support delete key and stuff");
     println!("better error handling for resumeable downloads\n");
 
-    let (tk, directory_id) = setup()?;
+    let config = Arc::new(RwLock::new(config::Config::read_or_default()));
+    let tk = if config.read().unwrap().local_store.is_none() {
+        Some(drive_oauth::setup_oauth()?)
+    } else {
+        None
+    };
 
-    let config = Arc::new(RwLock::new(config::read_config_file()?));
     let filtered_papers = get_and_filter_papers(&config)?;
 
     if filtered_papers.is_empty() {
@@ -198,7 +209,8 @@ fn run() -> Result<()> {
 
             for i in progressbar.wrap_iter(files.iter()) {
                 let f = File::open(i.path.clone()).context("File couldn't be opened")?;
-                drive::upload_file(&tk, f, i.paper, &directory_id)
+                let c = config.read().unwrap();
+                drive::upload_file_or_local(&tk, f, i.paper, &c.directory_id, &c.local_store)
                     .context("Uploading function has error")?;
             }
             progressbar.finish();
@@ -227,6 +239,15 @@ fn main() {
              .long("clean")
              .help("Sets the current date as a date in the config. This is should only be used before the first download \
                     to not make you go through papers you already know."))
+        .arg(Arg::with_name("local")
+            .short("l")
+            .long("local")
+            .help("Sets the download to local")
+            .takes_value(true))
+        .arg(Arg::with_name("oauth")
+            .short("o")
+            .long("oauth")
+            .help("Sets the config with oauth"))
         .get_matches();
 
     if matches.is_present("clean") {
@@ -234,6 +255,22 @@ fn main() {
         if res.is_err() {
             println!("Could not write file, something is wrong.");
         }
+    } else if let Some(dir) = matches.value_of("local") {
+        let mut c = config::Config::read_or_default();
+        if !Path::new(dir).exists() {
+            println!("Directory does not exist");
+            return;
+        }
+        let path = Path::new(dir)
+            .canonicalize()
+            .expect("Cannot canonicalize the path");
+        c.local_store = Some(dir);
+        c.write().expect("Could not write config");
+    } else if matches.is_present("oauth") {
+        setup().expect("Error in setting up oauth");
+    } else if config::Config::read().is_err() {
+        println!("Please initialize config with the oauth or local option.");
+        return;
     }
 
     run().expect("Error");
