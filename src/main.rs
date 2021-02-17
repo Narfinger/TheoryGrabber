@@ -264,7 +264,7 @@ fn main() {
         let path = Path::new(dir)
             .canonicalize()
             .expect("Cannot canonicalize the path");
-        c.local_store = Some(dir);
+        c.local_store = Some(dir.to_string());
         c.write().expect("Could not write config");
     } else if matches.is_present("oauth") {
         setup().expect("Error in setting up oauth");

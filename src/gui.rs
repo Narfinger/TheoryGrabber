@@ -1,6 +1,6 @@
-use cursive::traits::*;
 use cursive::views::Dialog;
 use cursive::Cursive;
+use cursive::{traits::*, CursiveExt};
 use cursive_table_view::{TableView, TableViewItem};
 //use errors::*;
 use crate::paper_dialog;
