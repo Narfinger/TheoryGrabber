@@ -1,7 +1,6 @@
 use crate::types::APP_INFO;
 use anyhow::{Context, Result};
 use app_dirs::*;
-use chrono::TimeZone;
 use std::fs::File;
 use std::io::{Read, Write};
 

@@ -8,7 +8,6 @@ use cursive::view::Selector;
 use cursive::views::{Dialog, DummyView, LinearLayout, TextView};
 use cursive::Printer;
 use cursive_table_view::TableView;
-use std::any::Any;
 
 ///This is just taking some keyboard shortcuts and make them something
 ///if you want to understand what I am doing look at View `on_event` and
@@ -34,10 +33,14 @@ impl View for PaperDialog {
     fn take_focus(&mut self, source: Direction) -> bool {
         self.d.take_focus(source)
     }
-    fn call_on_any<'a>(&mut self, selector: &Selector, callback: &mut dyn FnMut(&mut (dyn Any))) {
+    fn call_on_any<'a>(
+        &mut self,
+        selector: &Selector,
+        callback: &mut dyn FnMut(&mut (dyn cursive::View)),
+    ) {
         self.d.call_on_any(selector, callback);
     }
-    fn focus_view(&mut self, selector: &Selector) -> Result<(), ()> {
+    fn focus_view(&mut self, selector: &Selector) -> Result<(), cursive::view::ViewNotFound> {
         self.d.focus_view(selector)
     }
     fn needs_relayout(&self) -> bool {
