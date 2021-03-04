@@ -172,7 +172,7 @@ pub fn upload_file_or_local(
     let filename = make_filename(paper);
     if let Some(dir) = local_storage {
         let mut file = f.try_clone().unwrap();
-        let path = std::path::Path::new(dir).with_file_name(filename);
+        let path = std::path::Path::new(dir).join(filename);
         let mut new_file = File::create(path)?;
         std::io::copy(&mut file, &mut new_file)?;
         Ok(())
