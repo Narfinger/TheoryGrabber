@@ -16,7 +16,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         Title,
         Summary,
         Nothing,
-    };
+    }
     #[derive(Debug)]
     struct TmpPaper {
         published: Option<String>,
@@ -24,7 +24,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         summary: Option<String>,
         link: Option<String>,
         authors: Vec<String>,
-    };
+    }
 
     //this is super inefficient!
     let client = reqwest::blocking::Client::builder()

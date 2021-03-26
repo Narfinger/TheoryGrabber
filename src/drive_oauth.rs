@@ -47,7 +47,7 @@ fn get_client_secrets() -> Installed {
     #[derive(Deserialize)]
     struct ClientSecret {
         installed: Installed,
-    };
+    }
     let f = include_str!("../client_secret.json");
     json::from_str::<ClientSecret>(f).unwrap().installed
 }

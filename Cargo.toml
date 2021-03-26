@@ -31,6 +31,6 @@ tempdir = "0.3"           # A library for managing a temporary directory and del
 tokio-core = "0.1"             # Core I/O and event loop primitives for asynchronous I/O in Rust. Foundation for therest of the tokio crates.
 toml = "0.5"                   # A native Rust encoder and decoder of TOML-formatted files and streams. Provides implementations of the standard Serialize/Deser…
 oauth2 = "3.0.0"
-quick-xml = "0.21"               # High performance xml reader and writer
+quick-xml = "0.22"               # High performance xml reader and writer
 nom = "5.1"                 # A byte-oriented, zero-copy, parser combinators library
 url = "2.2"                  # URL library for Rust, based on the WHATWG URL Standard
