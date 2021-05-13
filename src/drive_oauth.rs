@@ -61,7 +61,7 @@ fn authorize() -> Result<oauth2::basic::BasicTokenResponse> {
         AuthUrl::new(secret.auth_uri).unwrap(),
         Some(TokenUrl::new(secret.token_uri).unwrap()),
     )
-    .set_redirect_url(RedirectUrl::new("http://localhost:8080".to_string()).unwrap());
+    .set_redirect_uri(RedirectUrl::new("http://localhost:8080".to_string()).unwrap());
     let (authorize_url, _) = config
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new(
