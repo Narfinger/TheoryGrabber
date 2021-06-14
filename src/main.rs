@@ -221,8 +221,8 @@ fn run() -> Result<()> {
     } else {
         println!(
             "Nothing to download ({}) and we are not saving ({}).",
-            console::Emoji("❌", ""),
-            console::Emoji("❌", "")
+            console::Emoji("❌", "X"),
+            console::Emoji("❌", "X")
         );
     }
     Ok(())
