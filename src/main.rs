@@ -151,6 +151,7 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
     progress_fetch_bar.set_message("Sorting and Deduping");
     papers.sort_unstable();
     types::dedup_papers(&mut papers);
+    types::remove_downloaded(&mut papers, config);
 
     progress_fetch_bar.finish_with_message("Done fetching");
 

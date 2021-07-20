@@ -8,6 +8,10 @@ use chrono_tz::America::New_York;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::RwLock;
+
+use crate::config::Config;
 
 pub const APP_INFO: AppInfo = AppInfo {
     name: "TheoryGrabber",
@@ -72,6 +76,32 @@ impl Ord for Paper {
 impl PartialOrd for Paper {
     fn partial_cmp(&self, other: &Paper) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl Paper {
+    /// Returns the author string we will use. Uses `get_last_name_initials`.
+    fn author_string(&self) -> String {
+        self.authors
+            .iter()
+            .fold(String::from(""), |acc, i| {
+                let lastname = {
+                    let lastname = i.split_whitespace().nth(1).expect("No lastname found?"); //lastname
+                    lastname.chars().next().unwrap()
+                };
+
+                acc + &lastname.to_string()
+            })
+            .to_uppercase()
+    }
+
+    /// Returns the filename we will save as for a given filename.
+    pub fn filename(&self) -> String {
+        let datestring = self.published.format("%Y-%m-%d");
+        let mut title = self.title.to_owned();
+        title.truncate(75);
+
+        datestring.to_string() + "-" + &self.author_string() + "-" + &title + ".pdf"
     }
 }
 
@@ -245,6 +275,14 @@ fn dedup_test() {
 pub fn dedup_papers(paper: &mut Vec<Paper>) {
     let v = paper.clone();
     paper.retain(|q| !fuzzy_exists_equal_different_source(&v, q));
+}
+
+/// do not show paper we already downloaded
+pub fn remove_downloaded(paper: &mut Vec<Paper>, c: &Arc<RwLock<Config>>) {
+    if let Some(ref d) = c.read().unwrap().local_store {
+        let base_path = PathBuf::from(d);
+        paper.retain(|p| !base_path.join(p.filename()).exists());
+    }
 }
 
 /// Column Type for the cursive view.

@@ -31,35 +31,6 @@ struct FileUploadJSON {
     parents: Vec<String>,
 }
 
-/// Returns the initial of the last name of an author.
-fn get_last_name_initials(author: &str) -> char {
-    let lastname = author
-        .split_whitespace()
-        .nth(1)
-        .expect("No lastname found?"); //lastname
-    lastname.chars().next().unwrap()
-}
-
-/// Returns the author string we will use. Uses `get_last_name_initials`.
-fn author_string(paper: &Paper) -> String {
-    paper
-        .authors
-        .iter()
-        .fold(String::from(""), |acc, i| {
-            acc + &get_last_name_initials(i).to_string()
-        })
-        .to_uppercase()
-}
-
-/// Returns the filename we will save as for a given filename.
-fn make_filename(paper: &Paper) -> String {
-    let datestring = paper.published.format("%Y-%m-%d");
-    let mut title = paper.title.to_owned();
-    title.truncate(75);
-
-    datestring.to_string() + "-" + &author_string(paper) + "-" + &title + ".pdf"
-}
-
 /// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
 pub fn create_directory(tk: &oauth2::basic::BasicTokenResponse) -> Result<String> {
     let client = reqwest::blocking::Client::new();
@@ -169,7 +140,7 @@ pub fn upload_file_or_local(
     fileid: &Option<String>,
     local_storage: &Option<String>,
 ) -> Result<()> {
-    let filename = make_filename(paper);
+    let filename = paper.filename();
     if let Some(dir) = local_storage {
         let mut file = f.try_clone().unwrap();
         let path = std::path::Path::new(dir).join(filename);
