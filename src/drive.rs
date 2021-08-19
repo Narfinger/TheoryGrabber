@@ -154,7 +154,7 @@ pub fn upload_file_or_local(
         let client = reqwest::blocking::Client::new();
         let mut header = HeaderMap::new();
 
-        let authstring = "Bearer ".to_owned() + &tk.access_token().secret();
+        let authstring = "Bearer ".to_owned() + tk.access_token().secret();
         header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
 
         let metadata = FileUploadJSON {

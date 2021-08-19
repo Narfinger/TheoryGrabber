@@ -227,9 +227,9 @@ fn fuzzy_exists_test() {
     };
 
     let vec = vec![p1.clone(), p1eq.clone(), p2.clone()];
-    assert_eq!(fuzzy_exists_equal_different_source(&vec, &p1), false);
-    assert_eq!(fuzzy_exists_equal_different_source(&vec, &p1eq), true);
-    assert_eq!(fuzzy_exists_equal_different_source(&vec, &p2), false);
+    assert!(!fuzzy_exists_equal_different_source(&vec, &p1));
+    assert!(fuzzy_exists_equal_different_source(&vec, &p1eq));
+    assert!(!fuzzy_exists_equal_different_source(&vec, &p2));
 }
 
 /// If 'p' is an Arxiv version, test if there exists an ECCC version with the same title.

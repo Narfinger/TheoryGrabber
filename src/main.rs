@@ -116,11 +116,11 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
             .read()
             .unwrap()
             .last_checked_arxiv
-            .unwrap_or(chrono::Utc::now());
+            .unwrap_or_else(chrono::Utc::now);
         let arxiv_papers = arxiv::parse_arxiv().map(|p| types::filter_papers(p, time));
         if let Ok(mut arxiv_papers) = arxiv_papers {
             arxiv_papers.sort_unstable();
-            if let Some(ref p) = arxiv_papers.last() {
+            if let Some(p) = arxiv_papers.last() {
                 c.write().unwrap().last_checked_arxiv =
                     p.published.checked_add_signed(chrono::Duration::minutes(1));
             }
@@ -133,7 +133,7 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
         .read()
         .unwrap()
         .last_checked_eccc
-        .unwrap_or(chrono::Utc::now());
+        .unwrap_or_else(chrono::Utc::now);
     let eccc_papers = eccc::parse_eccc(eccc_time).context("Error in parsing eccc")?;
     let mut eccc_papers = types::filter_papers(eccc_papers, eccc_time);
     eccc_papers.sort_unstable();

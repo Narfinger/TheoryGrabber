@@ -18,6 +18,18 @@ pub struct Config {
     pub local_store: Option<String>,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            last_checked: chrono::Utc::now(),
+            directory_id: None,
+            last_checked_arxiv: Some(chrono::Utc::now()),
+            last_checked_eccc: Some(chrono::Utc::now()),
+            local_store: None,
+        }
+    }
+}
+
 impl Config {
     pub fn write(&self) -> Result<()> {
         let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
@@ -31,16 +43,6 @@ impl Config {
             .context("Cannot write")
     }
 
-    pub fn new() -> Config {
-        Config {
-            last_checked: chrono::Utc::now(),
-            directory_id: None,
-            last_checked_arxiv: Some(chrono::Utc::now()),
-            last_checked_eccc: Some(chrono::Utc::now()),
-            local_store: None,
-        }
-    }
-
     pub fn read() -> Result<Config> {
         let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
         path.push("config.toml");
@@ -51,7 +53,7 @@ impl Config {
     }
 
     pub fn read_or_default() -> Config {
-        Config::read().unwrap_or(Config::new())
+        Config::read().unwrap_or_else(|_| Config::default())
     }
 }
 

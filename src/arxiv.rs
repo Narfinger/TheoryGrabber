@@ -95,7 +95,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                         .unwrap()
                         .value;
                     let res: &str = std::str::from_utf8(&it).expect("Error getting string");
-                    let mut url = Url::parse(&res).expect("Error parsing url");
+                    let mut url = Url::parse(res).expect("Error parsing url");
                     url.set_host(Some("export.arxiv.org"))
                         .expect("Could not replace hostname");
                     cur_paper.link = Some(url.to_string());
@@ -111,7 +111,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                         .unwrap()
                         .value;
                     let res: &str = std::str::from_utf8(&it).expect("Error getting string");
-                    let mut url = Url::parse(&res).expect("Error parsing url");
+                    let mut url = Url::parse(res).expect("Error parsing url");
                     url.set_host(Some("export.arxiv.org"))
                         .expect("Could not replace hostname");
                     cur_paper.link = Some(url.to_string());
