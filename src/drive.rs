@@ -2,16 +2,16 @@ use crate::oauth2::TokenResponse;
 use crate::types::Paper;
 use anyhow::{Context, Result};
 use nom::character::complete::digit1;
-use nom::combinator::map_res;
-use nom::complete::tag;
-use nom::number::complete::be_u32;
-use nom::sequence::tuple;
+use nom::combinator::{map_res, recognize};
+use nom::sequence::{self, tuple};
 use nom::IResult;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::str;
+
+use nom::bytes::complete::tag;
 
 static UPLOAD_URL: &str = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
 static DIRECTORY_URL: &str = "https://www.googleapis.com/drive/v3/files";
@@ -65,20 +65,20 @@ struct ContentRange {
     from: u32,
     to: u32,
 }
-fn number(input: &str) -> Result<u32, std::num::ParseIntError> {
-    u32::from_str_radix(input, 10)
+fn parse_u32(input: &str) -> IResult<&str, u32> {
+    map_res(recognize(digit1), str::parse)(input)
 }
 
-fn content_range(input: &str) -> Result<ContentRange, &str> {
-    let (input, from) = (be_u32)(input)?;
-    let (input, _) = (tag("-"))(input)?;
-    let (input, to) = (be_u32)(input)?;
+fn content_range(input: &str) -> IResult<&str, ContentRange> {
+    let (input, from) = parse_u32(input)?;
+    let (input, _) = tag("-")(input)?;
+    let (input, to) = parse_u32(input)?;
 
-    Ok(ContentRange { from, to })
+    Ok((input, ContentRange { from, to }))
 }
 
 fn parse_content_range(range: &str) -> Result<ContentRange> {
-    if let Ok((_, l)) = content_range(range.as_bytes()) {
+    if let Ok((_, l)) = content_range(range) {
         Ok(l)
     } else {
         Err(anyhow!("invalid content_range, str was {}", range))
