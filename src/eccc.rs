@@ -4,11 +4,10 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
 use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::{alpha0, digit1};
+use nom::bytes::streaming::tag;
+use nom::character::streaming::digit1;
 use nom::combinator::{map, map_res, recognize};
-use nom::number::complete::be_u32;
-use nom::sequence::{self, tuple};
+use nom::sequence::tuple;
 use nom::IResult;
 #[cfg(test)]
 use rayon::prelude::*;
@@ -17,7 +16,6 @@ use select::node::Node;
 use select::predicate::{And, Attr, Name};
 use std::io::Read;
 
-use nom::number::complete::u32;
 static ECCC: &str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &str = "https://eccc.weizmann.ac.il";
 
@@ -32,7 +30,7 @@ fn parse_i32(input: &str) -> IResult<&str, i32> {
 
 fn eccc_rough_day(input: &str) -> IResult<&str, u32> {
     let al = alt((tag("st"), tag("nd"), tag("rd")));
-    let (rest, day) = tuple((al, parse_u32))(input)?;
+    let (_, day) = tuple((al, parse_u32))(input)?;
     Ok(day)
 }
 

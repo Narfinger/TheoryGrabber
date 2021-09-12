@@ -1,9 +1,8 @@
 use crate::oauth2::TokenResponse;
 use crate::types::Paper;
 use anyhow::{Context, Result};
-use nom::character::complete::digit1;
+use nom::character::streaming::digit1;
 use nom::combinator::{map_res, recognize};
-use nom::sequence::{self, tuple};
 use nom::IResult;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
 use std::collections::HashMap;
