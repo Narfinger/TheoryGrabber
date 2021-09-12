@@ -3,53 +3,65 @@ use crate::types::{Paper, Source};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
-use nom::character::complete::digit1;
-#[cfg(test)]
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::character::complete::{alpha0, digit1};
+use nom::combinator::{map, map_res, recognize};
+use nom::number::complete::be_u32;
+use nom::sequence::{self, tuple};
 use nom::IResult;
+#[cfg(test)]
 use rayon::prelude::*;
 use select::document::Document;
 use select::node::Node;
 use select::predicate::{And, Attr, Name};
 use std::io::Read;
 
+use nom::number::complete::u32;
 static ECCC: &str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &str = "https://eccc.weizmann.ac.il";
 
-///eccc has a custom format chrono cannot parse, so we build a parser with nom
-named!(
-    number<u32>,
-    map_res!(map_res!(digit1, std::str::from_utf8), |s: &str| s
-        .parse::<u32>())
-);
-//named!(number<u32>, map_res!(map_res!(digit,from_utf8), FromStr::from_str) );
-named!(eccc_rough_day <&[u8], u32>, do_parse!(v: number >> alt!(tag!("st") | tag!("nd") | tag!("rd") | tag!("th")) >> (v)) );
-named!(eccc_rough_month <&[u8], u32>, alt!(
-    tag!("January")   => {|_| 1 } |
-    tag!("February")  => {|_| 2 } |
-    tag!("March")     => {|_| 3 } |
-    tag!("April")     => {|_| 4 } |
-    tag!("May")       => {|_| 5 } |
-    tag!("June")      => {|_| 6 } |
-    tag!("July")      => {|_| 7 } |
-    tag!("August")    => {|_| 8 } |
-    tag!("September") => {|_| 9 } |
-    tag!("October")   => {|_| 10 } |
-    tag!("November")  => {|_| 11 } |
-    tag!("December")  => {|_| 12 }));
+//eccc has a custom format chrono cannot parse, so we build a parser with nom
+fn parse_u32(input: &str) -> IResult<&str, u32> {
+    map_res(recognize(digit1), str::parse)(input)
+}
 
-named!(eccc_rough_year <&[u8], u32>, do_parse!(v: number >> (v)));
-named!(eccc_rough_date <&[u8], NaiveDate>, do_parse!(
-    day: eccc_rough_day >>
-        tag!(" ") >>
-        month: eccc_rough_month >>
-        tag!(" ") >>
-        year: number >>
-    (NaiveDate::from_ymd(year as i32, month, day))));
+fn parse_i32(input: &str) -> IResult<&str, i32> {
+    map_res(recognize(digit1), str::parse)(input)
+}
+
+fn eccc_rough_day(input: &str) -> IResult<&str, u32> {
+    let al = alt((tag("st"), tag("nd"), tag("rd")));
+    let (rest, day) = tuple((al, parse_u32))(input)?;
+    Ok(day)
+}
+
+fn eccc_rough_month(input: &str) -> IResult<&str, u32> {
+    let p1 = map(tag("January"), |_| 1);
+    let p2 = map(tag("February"), |_| 2);
+    let p3 = map(tag("March"), |_| 3);
+    let p4 = map(tag("April"), |_| 4);
+    let p5 = map(tag("May"), |_| 5);
+    let p6 = map(tag("June"), |_| 6);
+    let p7 = map(tag("July"), |_| 7);
+    let p8 = map(tag("August"), |_| 8);
+    let p9 = map(tag("September"), |_| 9);
+    let p10 = map(tag("October"), |_| 10);
+    let p11 = map(tag("November"), |_| 11);
+    let p12 = map(tag("December"), |_| 12);
+
+    alt((p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12))(input)
+}
+
+fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
+    let (rest, (day, month, year)) = tuple((eccc_rough_day, eccc_rough_month, parse_i32))(input)?;
+    Ok((rest, NaiveDate::from_ymd(year, month, day)))
+}
 
 /// Parses a date from the overview page.
 fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     let st = t.trim().to_owned() + " ";
-    let res = eccc_rough_date(st.as_bytes());
+    let res = eccc_rough_date(&st);
     if let Ok((_, s)) = res {
         Ok(s)
     } else {
@@ -61,22 +73,25 @@ fn parse_rough_date(t: &str) -> Result<NaiveDate> {
     }
 }
 
-named!(eccc_date_time<&[u8],NaiveDateTime>, do_parse!(
-    day: eccc_rough_day >>
-        tag!(" ") >>
-        month: eccc_rough_month >>
-        tag!(" ") >>
-        year: eccc_rough_year >>
-        tag!(" ") >>
-        hour: number >>
-        tag!(":") >>
-        minute: number >>
-    (NaiveDate::from_ymd(year as i32, month, day).and_hms(hour, minute, 0))));
+fn eccc_date_time(input: &str) -> IResult<&str, NaiveDateTime> {
+    let (input, (day, month, year, hour, _, minute)) = tuple((
+        eccc_rough_day,
+        eccc_rough_month,
+        parse_i32,
+        parse_u32,
+        tag(":"),
+        parse_u32,
+    ))(input)?;
+    Ok((
+        input,
+        NaiveDate::from_ymd(year, month, day).and_hms(hour, minute, 0),
+    ))
+}
 
 /// This uses Israel Standard time at the moment. This might change when eccc moves.
 fn parse_date(t: &str) -> Result<DateTime<Utc>> {
     let st = t.trim().to_owned() + " ";
-    let res = eccc_date_time(st.as_bytes());
+    let res = eccc_date_time(&st);
     if let Ok((_, naive)) = res {
         if let LocalResult::Single(israel) = Jerusalem.from_local_datetime(&naive) {
             Ok(israel.with_timezone(&Utc))
@@ -347,15 +362,18 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let rough_papers = parse_eccc_summary()?;
     // the -1 should not be necessary but we might loose a day in the utc to naivedate conversion.
     // wrong results will be removed in the second filter
-    let days = if utc.day() ==1 {//if we ask on the first, we obviously cannot go negative.
+    let days = if utc.day() == 1 {
+        //if we ask on the first, we obviously cannot go negative.
         1
-    } else { utc.day()-1};
+    } else {
+        utc.day() - 1
+    };
     let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), days);
 
     info!("Found rough papers: {:?}", &rough_papers);
 
     rough_papers
-        .par_iter()
+        .iter()
         .filter(|p| p.rough_published >= naive_filter_date)
         .map(parse_eccc_details)
         .filter(|p| {

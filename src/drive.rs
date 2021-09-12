@@ -2,6 +2,11 @@ use crate::oauth2::TokenResponse;
 use crate::types::Paper;
 use anyhow::{Context, Result};
 use nom::character::complete::digit1;
+use nom::combinator::map_res;
+use nom::complete::tag;
+use nom::number::complete::be_u32;
+use nom::sequence::tuple;
+use nom::IResult;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
 use std::collections::HashMap;
 use std::fs::File;
@@ -60,19 +65,17 @@ struct ContentRange {
     from: u32,
     to: u32,
 }
+fn number(input: &str) -> Result<u32, std::num::ParseIntError> {
+    u32::from_str_radix(input, 10)
+}
 
-named!(
-    number<u32>,
-    map_res!(map_res!(digit1, str::from_utf8), |s: &str| s.parse::<u32>())
-);
+fn content_range(input: &str) -> Result<ContentRange, &str> {
+    let (input, from) = (be_u32)(input)?;
+    let (input, _) = (tag("-"))(input)?;
+    let (input, to) = (be_u32)(input)?;
 
-named!(content_range<&[u8], ContentRange>,
-    do_parse!(
-        v: number >>
-        ws!(tag!("-")) >>
-        w: number >>
-        (ContentRange { from: v, to: w }))
-);
+    Ok(ContentRange { from, to })
+}
 
 fn parse_content_range(range: &str) -> Result<ContentRange> {
     if let Ok((_, l)) = content_range(range.as_bytes()) {
