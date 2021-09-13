@@ -5,9 +5,11 @@ use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone
 use chrono_tz::Asia::Jerusalem;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
+use nom::character::complete::multispace0;
 use nom::character::streaming::digit1;
 use nom::combinator::{map, map_res, recognize};
-use nom::sequence::tuple;
+use nom::error::ParseError;
+use nom::sequence::{delimited, tuple};
 use nom::IResult;
 #[cfg(test)]
 use rayon::prelude::*;
@@ -20,6 +22,17 @@ static ECCC: &str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &str = "https://eccc.weizmann.ac.il";
 
 //eccc has a custom format chrono cannot parse, so we build a parser with nom
+/// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
+/// trailing whitespace, returning the output of `inner`.
+fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
+    inner: F,
+) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+where
+    F: Fn(&'a str) -> IResult<&'a str, O, E>,
+{
+    delimited(multispace0, inner, multispace0)
+}
+
 fn parse_u32(input: &str) -> IResult<&str, u32> {
     map_res(recognize(digit1), str::parse)(input)
 }
@@ -30,8 +43,8 @@ fn parse_i32(input: &str) -> IResult<&str, i32> {
 
 fn eccc_rough_day(input: &str) -> IResult<&str, u32> {
     let al = alt((tag("st"), tag("nd"), tag("rd")));
-    let (_, day) = tuple((al, parse_u32))(input)?;
-    Ok(day)
+    let (input, (day, _)) = tuple((parse_u32, al))(input)?;
+    Ok((input, day))
 }
 
 fn eccc_rough_month(input: &str) -> IResult<&str, u32> {
@@ -106,56 +119,95 @@ fn parse_date(t: &str) -> Result<DateTime<Utc>> {
 }
 
 #[test]
-fn date_rough_parse_test() {
+fn date_rough_parse_test1() {
     //yes I am testing every month
     assert_eq!(
         parse_rough_date(" 16th November 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 11, 16))
     );
+}
+#[test]
+fn date_rough_parse_test2() {
     assert_eq!(
         parse_rough_date(" 3rd November 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 11, 3))
     );
+}
+
+#[test]
+fn date_rough_parse_test3() {
     assert_eq!(
         parse_rough_date(" 2nd November 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 11, 2))
     );
+}
+#[test]
+fn date_rough_parse_test4() {
     assert_eq!(
         parse_rough_date(" 1st October 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 10, 1))
     );
+}
+#[test]
+fn date_rough_parse_test5() {
     assert_eq!(
         parse_rough_date(" 26th September 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 9, 26))
     );
+}
+#[test]
+fn date_rough_parse_test6() {
     assert_eq!(
         parse_rough_date(" 30th August 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 8, 30))
     );
+}
+#[test]
+fn date_rough_parse_test7() {
     assert_eq!(
         parse_rough_date(" 28th July 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 7, 28))
     );
+}
+
+#[test]
+fn date_rough_parse_test8() {
     assert_eq!(
         parse_rough_date(" 27th June 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 6, 27))
     );
+}
+
+#[test]
+fn date_rough_parse_test9() {
     assert_eq!(
         parse_rough_date(" 28th May 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 5, 28))
     );
+}
+#[test]
+fn date_rough_parse_test10() {
     assert_eq!(
         parse_rough_date(" 21st April 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 4, 21))
     );
+}
+#[test]
+fn date_rough_parse_test11() {
     assert_eq!(
         parse_rough_date(" 26th March 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 3, 26))
     );
+}
+#[test]
+fn date_rough_parse_test12() {
     assert_eq!(
         parse_rough_date(" 23rd February 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 2, 23))
     );
+}
+#[test]
+fn date_rough_parse_test13() {
     assert_eq!(
         parse_rough_date(" 19th January 2017").ok(),
         Some(NaiveDate::from_ymd(2017, 1, 19))
