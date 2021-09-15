@@ -6,8 +6,8 @@ use chrono_tz::Asia::Jerusalem;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::character::complete::char;
+use nom::character::complete::digit1;
 use nom::character::complete::multispace0;
-use nom::character::streaming::digit1;
 use nom::combinator::{map, map_res, recognize};
 use nom::error::ParseError;
 use nom::sequence::{delimited, pair, separated_pair, tuple};
@@ -66,6 +66,8 @@ fn eccc_rough_month(input: &str) -> IResult<&str, u32> {
 }
 
 fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
+    let parsed = tuple((eccc_rough_day, char(' '), eccc_rough_month, char(' ')))(input);
+    println!("ppp{:?}", parsed);
     let (rest, (day, _, month, _, year)) = tuple((
         eccc_rough_day,
         char(' '),
@@ -79,7 +81,7 @@ fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
 
 /// Parses a date from the overview page.
 fn parse_rough_date(t: &str) -> Result<NaiveDate> {
-    let st = t.trim();
+    let st = t.trim().to_owned() + " ";
     let res = eccc_rough_date(&st);
     if let Ok((_, s)) = res {
         Ok(s)
@@ -137,6 +139,11 @@ fn date_partial_parse1() {
 #[test]
 fn date_partial_parse2() {
     assert_eq!(eccc_rough_month("November").map(|f| f.1), Ok(11));
+}
+
+#[test]
+fn date_partial_parse3() {
+    assert_eq!(parse_i32("2017").map(|f| f.1), Ok(2017));
 }
 
 #[test]
