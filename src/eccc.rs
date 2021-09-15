@@ -10,9 +10,8 @@ use nom::character::complete::digit1;
 use nom::character::complete::multispace0;
 use nom::combinator::{map, map_res, recognize};
 use nom::error::ParseError;
-use nom::sequence::{delimited, pair, separated_pair, tuple};
+use nom::sequence::{delimited, pair, tuple};
 use nom::IResult;
-#[cfg(test)]
 use rayon::prelude::*;
 use select::document::Document;
 use select::node::Node;
@@ -454,7 +453,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     info!("Found rough papers: {:?}", &rough_papers);
 
     rough_papers
-        .iter()
+        .par_iter()
         .filter(|p| p.rough_published >= naive_filter_date)
         .map(parse_eccc_details)
         .filter(|p| {
