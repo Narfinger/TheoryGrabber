@@ -95,10 +95,13 @@ fn parse_rough_date(t: &str) -> Result<NaiveDate> {
 }
 
 fn eccc_date_time(input: &str) -> IResult<&str, NaiveDateTime> {
-    let (input, (day, month, year, hour, _, minute)) = tuple((
+    let (input, (day, _, month, _, year, _, hour, _, minute)) = tuple((
         eccc_rough_day,
+        char(' '),
         eccc_rough_month,
+        char(' '),
         parse_i32,
+        char(' '),
         parse_u32,
         tag(":"),
         parse_u32,
