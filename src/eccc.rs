@@ -5,11 +5,12 @@ use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone
 use chrono_tz::Asia::Jerusalem;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
+use nom::character::complete::char;
 use nom::character::complete::multispace0;
 use nom::character::streaming::digit1;
 use nom::combinator::{map, map_res, recognize};
 use nom::error::ParseError;
-use nom::sequence::{delimited, tuple};
+use nom::sequence::{delimited, pair, separated_pair, tuple};
 use nom::IResult;
 #[cfg(test)]
 use rayon::prelude::*;
@@ -42,8 +43,8 @@ fn parse_i32(input: &str) -> IResult<&str, i32> {
 }
 
 fn eccc_rough_day(input: &str) -> IResult<&str, u32> {
-    let al = alt((tag("st"), tag("nd"), tag("rd")));
-    let (input, (day, _)) = tuple((parse_u32, al))(input)?;
+    let al = alt((tag("st"), tag("nd"), tag("rd"), tag("th")));
+    let (input, (day, _)) = pair(parse_u32, al)(input)?;
     Ok((input, day))
 }
 
@@ -65,13 +66,20 @@ fn eccc_rough_month(input: &str) -> IResult<&str, u32> {
 }
 
 fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
-    let (rest, (day, month, year)) = tuple((eccc_rough_day, eccc_rough_month, parse_i32))(input)?;
+    let (rest, (day, _, month, _, year)) = tuple((
+        eccc_rough_day,
+        char(' '),
+        eccc_rough_month,
+        char(' '),
+        parse_i32,
+    ))(input)?;
+
     Ok((rest, NaiveDate::from_ymd(year, month, day)))
 }
 
 /// Parses a date from the overview page.
 fn parse_rough_date(t: &str) -> Result<NaiveDate> {
-    let st = t.trim().to_owned() + " ";
+    let st = t.trim();
     let res = eccc_rough_date(&st);
     if let Ok((_, s)) = res {
         Ok(s)
@@ -116,6 +124,19 @@ fn parse_date(t: &str) -> Result<DateTime<Utc>> {
             res
         ))
     }
+}
+
+#[test]
+fn date_partial_parse1() {
+    assert_eq!(eccc_rough_day("14th").map(|f| f.1), Ok(14));
+    assert_eq!(eccc_rough_day("21st").map(|f| f.1), Ok(21));
+    assert_eq!(eccc_rough_day("3rd").map(|f| f.1), Ok(3));
+    assert_eq!(eccc_rough_day("22nd").map(|f| f.1), Ok(22));
+}
+
+#[test]
+fn date_partial_parse2() {
+    assert_eq!(eccc_rough_month("November").map(|f| f.1), Ok(11));
 }
 
 #[test]
