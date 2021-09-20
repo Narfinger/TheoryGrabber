@@ -32,6 +32,11 @@ impl Config {
     pub fn write(&self) -> Result<()> {
         let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
+        if !path.exists() {
+            println!("Creating directories for {:?}", &path);
+            std::fs::create_dir_all(path.parent().unwrap())
+                .context("trying to create directory for config file")?;
+        }
         let mut file = File::create(path)?;
         let st = toml::to_string(&self);
         if st.is_err() {

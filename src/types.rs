@@ -15,7 +15,7 @@ use std::sync::RwLock;
 use crate::config::Config;
 
 pub fn get_config_dir() -> Result<std::path::PathBuf> {
-    ProjectDirs::from("com", "narfinger", "theorygrabber")
+    ProjectDirs::from("com", "narfinger", "TheoryGrabber")
         .map(|p| p.config_dir().to_path_buf())
         .ok_or_else(|| anyhow!("Error in getting config file"))
 }
