@@ -1,5 +1,4 @@
 #![recursion_limit = "128"]
-extern crate app_dirs;
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -18,15 +17,14 @@ extern crate select;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate console;
+extern crate nom;
+extern crate oauth2;
 extern crate quick_xml;
 extern crate tempdir;
+extern crate tokio_core;
 extern crate toml;
 extern crate url;
-#[macro_use]
-extern crate nom;
-extern crate console;
-extern crate oauth2;
-extern crate tokio_core;
 
 pub mod arxiv;
 pub mod config;

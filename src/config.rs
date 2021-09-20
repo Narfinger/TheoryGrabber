@@ -1,6 +1,4 @@
-use crate::types::APP_INFO;
 use anyhow::{Context, Result};
-use app_dirs::*;
 use std::fs::File;
 use std::io::{Read, Write};
 
@@ -32,7 +30,7 @@ impl Default for Config {
 
 impl Config {
     pub fn write(&self) -> Result<()> {
-        let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+        let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
         let mut file = File::create(path)?;
         let st = toml::to_string(&self);
@@ -44,7 +42,7 @@ impl Config {
     }
 
     pub fn read() -> Result<Config> {
-        let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+        let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
         let mut file = File::open(path)?;
         let mut s = String::new();

@@ -1,6 +1,4 @@
-use crate::types::APP_INFO;
 use anyhow::Result;
-use app_dirs::*;
 use chrono::{DateTime, Utc};
 use oauth2::reqwest::http_client;
 use oauth2::{
@@ -149,7 +147,7 @@ fn refresh(oldtoken: &Token) -> Result<Token> {
 
 /// Gets the oauth2 token, either saved in tk.json or creates a new. if not current, refreshes it
 pub fn setup_oauth() -> Result<oauth2::basic::BasicTokenResponse> {
-    let mut path = app_root(AppDataType::UserConfig, &APP_INFO).expect("Error in app dir");
+    let mut path = crate::types::get_config_dir()?;
     path.push("tk.json");
     let f = File::open(&path);
     let tk = if let Ok(f7) = f {

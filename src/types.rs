@@ -1,10 +1,11 @@
-use app_dirs::*;
+use anyhow::Result;
 use chrono::Datelike;
 use chrono::Duration;
 #[cfg(test)]
 use chrono::Utc;
 use chrono::Weekday;
 use chrono_tz::America::New_York;
+use directories::ProjectDirs;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
@@ -13,10 +14,11 @@ use std::sync::RwLock;
 
 use crate::config::Config;
 
-pub const APP_INFO: AppInfo = AppInfo {
-    name: "TheoryGrabber",
-    author: "Narfinger",
-};
+pub fn get_config_dir() -> Result<std::path::PathBuf> {
+    ProjectDirs::from("com", "narfinger", "theorygrabber")
+        .map(|p| p.config_dir().to_path_buf())
+        .ok_or_else(|| anyhow!("Error in getting config file"))
+}
 
 /// Shows where the paper came from.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
