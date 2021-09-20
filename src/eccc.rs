@@ -65,8 +65,6 @@ fn eccc_rough_month(input: &str) -> IResult<&str, u32> {
 }
 
 fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
-    let parsed = tuple((eccc_rough_day, char(' '), eccc_rough_month, char(' ')))(input);
-    println!("ppp{:?}", parsed);
     let (rest, (day, _, month, _, year)) = tuple((
         eccc_rough_day,
         char(' '),
