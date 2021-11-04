@@ -88,7 +88,7 @@ impl Paper {
             .iter()
             .fold(String::from(""), |acc, i| {
                 let lastname = {
-                    let lastname = i.split_whitespace().nth(1).expect("No lastname found?"); //lastname
+                    let lastname = i.split_whitespace().nth(1).unwrap_or("No lastname"); //lastname
                     lastname.chars().next().unwrap()
                 };
 

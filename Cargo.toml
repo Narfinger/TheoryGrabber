@@ -9,9 +9,9 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.43"
 clap = "2.33.3"
-console = "0.14.1"
+console = "0.15"
 chrono = { version = "0.4.19", features = ["serde"] }              # Date and time library for Rust
-chrono-tz = "0.5.3"
+chrono-tz = "0.6.0"
 cursive = { version = "0.16.3", features = ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
 #cursive_table_view = {git = "https://github.com/yorickdowne/cursive_table_view.git", rev="2a8b6d7055fe8249aa54f728da240da00b5c8924"}
 cursive_table_view = "0.13.3"
@@ -33,4 +33,4 @@ oauth2 = "4.1.0"
 quick-xml = "0.22.0"
 nom = "7.0.0"
 url = "2.2.2"
-directories = "3.0.2"
+directories = "4.0"
