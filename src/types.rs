@@ -103,7 +103,8 @@ impl Paper {
         let mut title = self.title.to_owned();
         title.truncate(75);
 
-        datestring.to_string() + "-" + &self.author_string() + "-" + &title + ".pdf"
+        // we do not want zeroes
+        datestring.to_string() + "-" + &self.author_string() + "-" + title.trim_end() + ".pdf"
     }
 }
 
