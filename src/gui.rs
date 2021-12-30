@@ -59,6 +59,12 @@ fn button_download_all(siv: &mut Cursive) {
     siv.quit();
 }
 
+fn button_reset(all_papers: Vec<Paper>, siv: &mut Cursive) {
+    siv.call_on_name("table", move |table: &mut TableView<Paper, BasicColumn>| {
+        table.set_items(all_papers);
+    });
+}
+
 /// Returns papers that are where selected for download. We return None if we do not want to save the date.
 pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
     let val = {
@@ -75,7 +81,7 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
             })
             .default_column(BasicColumn::Published);
 
-        table.set_items(papers);
+        table.set_items(papers.clone());
         let length = table.len();
         table.set_selected_row(length - 1);
         table.set_on_submit(table_on_submit);
@@ -84,6 +90,7 @@ pub fn get_selected_papers(papers: Vec<Paper>) -> Option<Vec<Paper>> {
             Dialog::around(table.with_name("table").min_size((500, 80)))
                 .title("Table View")
                 .button("Download all and save", button_download_all)
+                .button("Reset", move |siv| button_reset(papers.clone(), siv))
                 .button("Quit", button_quit),
         );
 
