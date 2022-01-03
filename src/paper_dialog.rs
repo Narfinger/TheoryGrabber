@@ -59,6 +59,11 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
         .child(DummyView)
         .child(TextView::new(print_authors(value)))
         .child(DummyView)
+        .child(TextView::new(format!(
+            "{}",
+            value.published.date().format("%v")
+        )))
+        .child(DummyView)
         .child(TextView::new(value.link.clone().to_string()))
         .child(DummyView)
         .child(TextView::new(value.description.clone()));

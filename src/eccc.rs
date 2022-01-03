@@ -363,7 +363,7 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 }
 
 fn parse_eccc_summary_for_year(year: i32) -> Result<Vec<RoughPaper>> {
-    let url = format!("{}{:?}/", ECCC.to_string(), year);
+    let url = format!("{}{:?}/", &ECCC, year);
     let res = {
         let res = reqwest::blocking::get(&url).context("Can't get eccc")?;
         if !res.status().is_success() {
