@@ -254,13 +254,6 @@ fn date_parse_test() {
     );
 }
 
-/// The url we should look at. This is kind of rough as we just use the current year, hoping that nobody publishes around new year.
-fn get_url() -> String {
-    let now = Utc::now().year();
-
-    format!("{}{:?}/", ECCC.to_string(), now)
-}
-
 /// This extracts the authors.
 /// We split at whitespace, skip the first 5 which are id and link
 /// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"].
@@ -369,12 +362,10 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
     })
 }
 
-/// Parses the year summary page.
-/// This function needs a major overhau las how we handle vectors is really rough
-fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
-    let string = get_url();
+fn parse_eccc_summary_for_year(year: i32) -> Result<Vec<RoughPaper>> {
+    let url = format!("{}{:?}/", ECCC.to_string(), year);
     let res = {
-        let res = reqwest::blocking::get(&string).context("Can't get eccc")?;
+        let res = reqwest::blocking::get(&url).context("Can't get eccc")?;
         if !res.status().is_success() {
             return Err(anyhow!("Some error in getting the reqwuest"));
         }
@@ -386,6 +377,21 @@ fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
             .collect::<Result<Vec<RoughPaper>>>() //type: Vec<Result<RoughPaper>> (actually iterator over the vector)
     };
     res
+}
+
+/// Parses the year summary page.
+/// This function needs a major overhau las how we handle vectors is really rough
+fn parse_eccc_summary() -> Result<Vec<RoughPaper>> {
+    if Utc::now().month() == 1 {
+        let mut papers = parse_eccc_summary_for_year(Utc::now().year())
+            .context("ECCC seems wrong with current year")?;
+        let mut old_papers = parse_eccc_summary_for_year(Utc::now().year() - 1)
+            .context("ECCC seems wrong with previous year")?;
+        old_papers.append(&mut papers);
+        Ok(old_papers)
+    } else {
+        parse_eccc_summary_for_year(Utc::now().year())
+    }
 }
 
 /// Function that queries and parses the details page for a given `RoughPaper`.
