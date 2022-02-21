@@ -1,36 +1,36 @@
 [package]
 name = "theory_grabber"
 license = "GPL-3.0-only"
-version = "0.9.5"
+version = "0.9.6"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.43"
-clap = "2.33.3"
-console = "0.15"
+anyhow = "1.0.54"
+clap = {version = "3.1.0", features = ["derive"]}
+console = "0.15.0"
 chrono = { version = "0.4.19", features = ["serde"] }              # Date and time library for Rust
-chrono-tz = "0.6.0"
-cursive = { version = "0.16.3", features = ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
+chrono-tz = "0.6.1"
+cursive = { version = "0.17.0", features = ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
 #cursive_table_view = {git = "https://github.com/yorickdowne/cursive_table_view.git", rev="2a8b6d7055fe8249aa54f728da240da00b5c8924"}
-cursive_table_view = "0.13.3"
+cursive_table_view = "0.14.0"
 log = "0.4.14"
 pretty_env_logger = "0.4.0"
 indicatif = "0.16.2"
 rayon = "1.5.1"
-reqwest = { version = "0.11.4", features = ['blocking', 'json'] }             # higher level HTTP client library
+reqwest = { version = "0.11.9", features = ['blocking', 'json'] }             # higher level HTTP client library
 #reqwest = {git = "https://github.com/seanmonstar/reqwest" }
 select = "0.5.0"
-serde = "1.0.130"
-serde_json = "1.0.67"
-serde_derive = "1.0.130"
-serde_yaml = "0.8.20"
+serde = "1.0.136"
+serde_json = "1.0.79"
+serde_derive = "1.0.136"
+serde_yaml = "0.8.23"
 tempdir = "0.3.7"
 tokio-core = "0.1.18"
 toml = "0.5.8"
 oauth2 = "4.1.0"
 quick-xml = "0.22.0"
-nom = "7.0.0"
+nom = "7.1.0"
 url = "2.2.2"
-directories = "4.0"
+directories = "4.0.1"

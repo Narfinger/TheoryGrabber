@@ -1,5 +1,4 @@
 #![recursion_limit = "128"]
-#[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate anyhow;
@@ -37,7 +36,7 @@ pub mod types;
 
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
-use clap::{App, Arg};
+use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs::File;
 use std::io::copy;
@@ -227,45 +226,45 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+///Grabs papers from arxiv and eccc and puts them into a local directory
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Sets the current date as a date in the config. This should be used before the first download.
+    #[clap(short, long)]
+    clean: bool,
+
+    /// Sets the download to local with this as a directory
+    #[clap(short, long)]
+    local: Option<String>,
+
+    /// Sets the config with oauth
+    #[clap(short, long)]
+    oauth: bool,
+}
+
 fn main() {
     pretty_env_logger::init();
-    let matches = App::new("TheoryGrabber")
-        .version(crate_version!())
-        .author("Narfinger")
-        .about("Grabs ArXiv and ECCC papers, lists them, downloads them and uploads them to a folder in Google Drive.")
-        .arg(Arg::with_name("clean")
-             .short("c")
-             .long("clean")
-             .help("Sets the current date as a date in the config. This is should only be used before the first download \
-                    to not make you go through papers you already know."))
-        .arg(Arg::with_name("local")
-            .short("l")
-            .long("local")
-            .help("Sets the download to local")
-            .takes_value(true))
-        .arg(Arg::with_name("oauth")
-            .short("o")
-            .long("oauth")
-            .help("Sets the config with oauth"))
-        .get_matches();
+    let args = Args::parse();
 
-    if matches.is_present("clean") {
+    if args.clean {
         let res = setup();
         if res.is_err() {
             println!("Could not write file, something is wrong.");
         }
-    } else if let Some(dir) = matches.value_of("local") {
+    } else if let Some(dir) = args.local {
         let mut c = config::Config::read_or_default();
-        if !Path::new(dir).exists() {
+        if !Path::new(&dir).exists() {
             println!("Directory does not exist");
             return;
         }
-        let path = Path::new(dir)
+        let path = Path::new(&dir)
             .canonicalize()
             .expect("Cannot canonicalize the path");
         c.local_store = Some(String::from(path.to_str().unwrap()));
         c.write().expect("Could not write config");
-    } else if matches.is_present("oauth") {
+    } else if args.oauth {
+        println!("Warning, Oauth is currently very flaky and might not work");
         setup().expect("Error in setting up oauth");
     } else if config::Config::read().is_err() {
         println!("Please initialize config with the oauth or local option.");

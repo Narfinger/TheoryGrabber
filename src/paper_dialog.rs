@@ -1,6 +1,4 @@
 use crate::types::{print_authors, BasicColumn, Paper};
-use anyhow::Result;
-use cursive::direction::Direction;
 use cursive::event::{Event, EventResult};
 use cursive::traits::View;
 use cursive::vec::Vec2;
@@ -30,9 +28,9 @@ impl View for PaperDialog {
     fn on_event(&mut self, event: Event) -> EventResult {
         custom_event_handler(self, event)
     }
-    fn take_focus(&mut self, source: Direction) -> bool {
-        self.d.take_focus(source)
-    }
+    //fn take_focus(&mut self, source: Direction) -> bool {
+    //    self.d.take_focus(source)
+    //}
     fn call_on_any<'a>(
         &mut self,
         selector: &Selector,
@@ -40,9 +38,9 @@ impl View for PaperDialog {
     ) {
         self.d.call_on_any(selector, callback);
     }
-    fn focus_view(&mut self, selector: &Selector) -> Result<(), cursive::view::ViewNotFound> {
-        self.d.focus_view(selector)
-    }
+    //fn focus_view(&mut self, selector: &Selector) -> Result<(), cursive::view::ViewNotFound> {
+    //   self.d.focus_view(selector)
+    //}
     fn needs_relayout(&self) -> bool {
         self.d.needs_relayout()
     }
