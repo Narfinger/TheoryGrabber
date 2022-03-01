@@ -1,7 +1,7 @@
 [package]
 name = "theory_grabber"
 license = "GPL-3.0-only"
-version = "0.9.6"
+version = "0.9.7"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 edition = "2018"
 
@@ -26,10 +26,10 @@ serde = "1.0.136"
 serde_json = "1.0.79"
 serde_derive = "1.0.136"
 serde_yaml = "0.8.23"
-tempdir = "0.3.7"
-tokio-core = "0.1.18"
+tempfile = "3.3"
+tokio = "1.17"
 toml = "0.5.8"
-oauth2 = "4.1.0"
+#oauth2 = "4.1.0"
 quick-xml = "0.22.0"
 nom = "7.1.0"
 url = "2.2.2"

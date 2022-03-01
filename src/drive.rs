@@ -1,4 +1,3 @@
-use crate::oauth2::TokenResponse;
 use crate::types::Paper;
 use anyhow::{Context, Result};
 use nom::character::streaming::digit1;
@@ -33,31 +32,6 @@ struct FileUploadJSON {
     name: String,
     mime_type: String,
     parents: Vec<String>,
-}
-
-/// Creates directory in google drive. If called multiple times, will create multiple directories and saves the last directory id to the configuration file.
-pub fn create_directory(tk: &oauth2::basic::BasicTokenResponse) -> Result<String> {
-    let client = reqwest::blocking::Client::new();
-    let mut header = HeaderMap::new();
-
-    header.insert(
-        AUTHORIZATION,
-        HeaderValue::from_str(tk.access_token().secret()).unwrap(),
-    );
-    let mut metadata = HashMap::new();
-    metadata.insert("name", DIRECTORY_NAME);
-    metadata.insert("mimeType", "application/vnd.google-apps.folder");
-
-    let res = client
-        .post(DIRECTORY_URL)
-        .headers(header)
-        .json(&metadata)
-        .send()
-        .context("Error in sending to create directory")?;
-
-    let response: FileCreateResponse = res.json().context("Error in decoding Response")?;
-
-    Ok(response.id)
 }
 
 struct ContentRange {
@@ -136,7 +110,7 @@ fn resume_upload(loc: &str, mut f: File, h: &HeaderMap) -> Result<()> {
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
 /// Currently we do not support resuming a broken upload and just error out.
 pub fn upload_file_or_local(
-    tk: &Option<oauth2::basic::BasicTokenResponse>,
+    //tk: &Option<oauth2::basic::BasicTokenResponse>,
     f: File,
     paper: &Paper,
     fileid: &Option<String>,
@@ -150,49 +124,6 @@ pub fn upload_file_or_local(
         std::io::copy(&mut file, &mut new_file)?;
         Ok(())
     } else {
-        let tk = tk.as_ref().expect("No local storage and no token");
-        //getting the proper resumeable session URL
-        info!("Uploading {}", &paper.title);
-        let client = reqwest::blocking::Client::new();
-        let mut header = HeaderMap::new();
-
-        let authstring = "Bearer ".to_owned() + tk.access_token().secret();
-        header.insert(AUTHORIZATION, HeaderValue::from_str(&authstring).unwrap());
-
-        let metadata = FileUploadJSON {
-            name: filename,
-            mime_type: "application/pdf".to_string(),
-            parents: vec![String::from(fileid.as_ref().unwrap())],
-        };
-
-        let query = client
-            .post(UPLOAD_URL)
-            .headers(header.clone())
-            .json(&metadata)
-            .build();
-
-        let res = client
-            .execute(query.unwrap())
-            .context("Error in getting resumeable url")?;
-
-        if res.status().is_success() {
-            if let Some(loc) = res.headers().get(LOCATION) {
-                let fclone = f.try_clone().unwrap();
-                let upload_res = client
-                    .put(loc.to_str().unwrap())
-                    .headers(header.clone())
-                    .body(f)
-                    .send();
-                if upload_res.is_ok() {
-                    Ok(())
-                } else {
-                    resume_upload(loc.to_str().unwrap(), fclone, &header)
-                }
-            } else {
-                Err(anyhow!("no location header found"))
-            }
-        } else {
-            Err(anyhow!("Something went wrong with getting resumeable url"))
-        }
+        Err(anyhow!("Not implemented"))
     }
 }

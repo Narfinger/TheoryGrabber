@@ -18,17 +18,15 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate console;
 extern crate nom;
-extern crate oauth2;
 extern crate quick_xml;
-extern crate tempdir;
-extern crate tokio_core;
+extern crate tempfile;
+extern crate tokio;
 extern crate toml;
 extern crate url;
 
 pub mod arxiv;
 pub mod config;
 pub mod drive;
-pub mod drive_oauth;
 pub mod eccc;
 pub mod gui;
 pub mod paper_dialog;
@@ -44,7 +42,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 /// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
@@ -155,17 +153,17 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
     Ok(papers)
 }
 
-fn setup() -> Result<(oauth2::basic::BasicTokenResponse, String)> {
-    let tk = drive_oauth::setup_oauth()?;
+fn setup() -> Result<String> {
+    //let tk = drive_oauth::setup_oauth()?;
     let directory_id = if let Some(id) = config::read_directory_id() {
         id
     } else {
-        let id = drive::create_directory(&tk)?;
-        config::write_directory_id_and_now(id.clone())?;
-        id
+        //let id = drive::create_directory(&tk)?;
+        //config::write_directory_id_and_now(id.clone())?;
+        "NULL".to_string()
     };
 
-    Ok((tk, directory_id))
+    Ok(directory_id)
 }
 
 fn run() -> Result<()> {
@@ -174,11 +172,7 @@ fn run() -> Result<()> {
     println!("better error handling for resumeable downloads\n");
 
     let config = Arc::new(RwLock::new(config::Config::read_or_default()));
-    let tk = if config.read().unwrap().local_store.is_none() {
-        Some(drive_oauth::setup_oauth()?)
-    } else {
-        None
-    };
+    let tk: Option<String> = None;
 
     let filtered_papers = get_and_filter_papers(&config)?;
 
@@ -195,7 +189,7 @@ fn run() -> Result<()> {
             //return config::write_paper_published(last_paper);
         }
 
-        if let Ok(dir) = TempDir::new("TheoryGrabber") {
+        if let Ok(dir) = TempDir::new() {
             let files = download_papers(&papers_to_download, &dir).context("Files error")?;
 
             let progressbar = ProgressBar::new(files.len() as u64);
@@ -208,7 +202,7 @@ fn run() -> Result<()> {
             for i in progressbar.wrap_iter(files.iter()) {
                 let f = File::open(i.path.clone()).context("File couldn't be opened")?;
                 let c = config.read().unwrap();
-                drive::upload_file_or_local(&tk, f, i.paper, &c.directory_id, &c.local_store)
+                drive::upload_file_or_local(f, i.paper, &c.directory_id, &c.local_store)
                     .context("Uploading function has error")?;
             }
             progressbar.finish();
