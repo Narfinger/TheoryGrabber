@@ -231,10 +231,6 @@ struct Args {
     /// Sets the download to local with this as a directory
     #[clap(short, long)]
     local: Option<String>,
-
-    /// Sets the config with oauth
-    #[clap(short, long)]
-    oauth: bool,
 }
 
 fn main() {
