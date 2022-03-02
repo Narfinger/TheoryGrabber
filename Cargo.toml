@@ -3,7 +3,10 @@ name = "theory_grabber"
 license = "GPL-3.0-only"
 version = "1.0.0"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
-edition = "2018"
+edition = "2021"
+categories = ["command-line-utilities"]
+repository = "https://github.com/Narfinger/TheoryGrabber"
+description = "Downloads papers from arxiv and eccc and stores them in a local directory. Saves the last date looked at."
 
 
 [dependencies]

@@ -253,9 +253,6 @@ fn main() {
             .expect("Cannot canonicalize the path");
         c.local_store = Some(String::from(path.to_str().unwrap()));
         c.write().expect("Could not write config");
-    } else if args.oauth {
-        println!("Warning, Oauth is currently very flaky and might not work");
-        setup().expect("Error in setting up oauth");
     } else if config::Config::read().is_err() {
         println!("Please initialize config with the oauth or local option.");
         return;
