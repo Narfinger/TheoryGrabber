@@ -3,7 +3,7 @@ use cursive::event::{Event, EventResult};
 use cursive::traits::View;
 use cursive::vec::Vec2;
 use cursive::view::Selector;
-use cursive::views::{Dialog, DummyView, LinearLayout, TextView};
+use cursive::views::{Dialog, DummyView, LinearLayout, TextView, DialogFocus};
 use cursive::Printer;
 use cursive_table_view::TableView;
 
@@ -65,7 +65,7 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
         .child(TextView::new(value.link.clone().to_string()))
         .child(DummyView)
         .child(TextView::new(value.description.clone()));
-    let dialog = Dialog::around(nd)
+    let mut dialog = Dialog::around(nd)
         .title(format!("Details row # {}", row))
         /*.button("Next", move |s| {
             //this is kind of hacky
@@ -85,6 +85,8 @@ pub fn new(value: &Paper, row: usize, index: usize) -> PaperDialog {
         .button("Close", move |s| {
             s.pop_layer();
         });
+
+        dialog.set_focus(DialogFocus::Button(0));
 
     PaperDialog { d: dialog }
 }
