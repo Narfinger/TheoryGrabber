@@ -53,10 +53,10 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
         ProgressStyle::default_bar()
             .template(
                 "[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}",
-            )
+            )?
             .progress_chars("#>-"),
     );
-    progressbar.enable_steady_tick(100);
+    progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
 
     let client = reqwest::blocking::Client::builder()
         .user_agent("TheoryGrabber")
@@ -101,9 +101,9 @@ fn get_and_filter_papers(config: &Arc<RwLock<config::Config>>) -> Result<Vec<Pap
     let progress_fetch_bar = ProgressBar::new_spinner();
     progress_fetch_bar.set_message("Getting Arxiv/ECCC");
     progress_fetch_bar.set_style(
-        ProgressStyle::default_bar().template("[{elapsed_precise}] {msg} {spinner:.green}"),
+        ProgressStyle::default_bar().template("[{elapsed_precise}] {msg} {spinner:.green}")?,
     );
-    progress_fetch_bar.enable_steady_tick(100);
+    progress_fetch_bar.enable_steady_tick(std::time::Duration::new(0, 100));
 
     let c = config.clone();
     let handle = thread::spawn(move || {
@@ -195,9 +195,9 @@ fn run() -> Result<()> {
             let progressbar = ProgressBar::new(files.len() as u64);
             progressbar.set_message("Uploading Papers");
             progressbar.set_style(ProgressStyle::default_bar()
-                                  .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")
+                                  .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")?
                                   .progress_chars("#>-"));
-            progressbar.enable_steady_tick(100);
+            progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
 
             for i in progressbar.wrap_iter(files.iter()) {
                 let f = File::open(i.path.clone()).context("File couldn't be opened")?;

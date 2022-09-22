@@ -1,6 +1,7 @@
 use crate::types::{Paper, Source};
 use anyhow::Result;
 use quick_xml::events::Event;
+use quick_xml::name::QName;
 use quick_xml::Reader;
 use std::io::Read;
 use url::Url;
@@ -47,8 +48,8 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
         authors: Vec::new(),
     };
     loop {
-        match reader.read_event(&mut buf) {
-            Ok(Event::End(ref e)) => match e.name() {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::End(ref e)) => match e.name().local_name().as_ref() {
                 b"entry" => {
                     tag = Tag::Nothing;
                     entries.push(cur_paper);
@@ -64,7 +65,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                     tag = Tag::Entry;
                 }
             },
-            Ok(Event::Start(ref e)) => match e.name() {
+            Ok(Event::Start(ref e)) => match e.name().local_name().as_ref() {
                 b"entry" => {
                     tag = Tag::Entry;
                     cur_paper = TmpPaper {
@@ -90,7 +91,7 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                 b"link" => {
                     let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
                     let it = bl
-                        .find(|i| i.as_ref().unwrap().key == b"href")
+                        .find(|i| i.as_ref().unwrap().key == QName(b"href"))
                         .unwrap()
                         .unwrap()
                         .value;
@@ -103,10 +104,10 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
                 _ => {}
             },
             Ok(Event::Empty(e)) => {
-                if let b"link" = e.name() {
+                if let b"link" = e.name().local_name().as_ref() {
                     let mut bl: quick_xml::events::attributes::Attributes = e.attributes();
                     let it = bl
-                        .find(|i| i.as_ref().unwrap().key == b"href")
+                        .find(|i| i.as_ref().unwrap().key == QName(b"href"))
                         .unwrap()
                         .unwrap()
                         .value;
@@ -119,21 +120,15 @@ pub fn parse_arxiv() -> Result<Vec<Paper>> {
             }
             Ok(Event::Text(e)) => {
                 match tag {
-                    Tag::Published => {
-                        cur_paper.published = Some(e.unescape_and_decode(&reader).unwrap())
-                    }
-                    Tag::Title => cur_paper.title = Some(e.unescape_and_decode(&reader).unwrap()),
-                    Tag::Summary => {
-                        cur_paper.summary = Some(e.unescape_and_decode(&reader).unwrap())
-                    }
-                    Tag::Author => cur_paper
-                        .authors
-                        .push(e.unescape_and_decode(&reader).unwrap()),
+                    Tag::Published => cur_paper.published = Some(e.unescape().unwrap().to_string()),
+                    Tag::Title => cur_paper.title = Some(e.unescape().unwrap().to_string()),
+                    Tag::Summary => cur_paper.summary = Some(e.unescape().unwrap().to_string()),
+                    Tag::Author => cur_paper.authors.push(e.unescape().unwrap().to_string()),
                     //Tag::Link => cur_paper.link = Some("http://localhost".to_string()), //Some(e.unescape_and_decode(&reader).unwrap()),
                     Tag::Nothing | Tag::Entry => {}
                 }
 
-                e.unescape_and_decode(&reader).unwrap();
+                e.unescape().unwrap().to_string();
             }
             Ok(Event::Eof) => break,
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
