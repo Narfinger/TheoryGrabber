@@ -1,10 +1,9 @@
 use crate::types::Paper;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use nom::character::streaming::digit1;
 use nom::combinator::{map_res, recognize};
 use nom::IResult;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_RANGE, LOCATION};
-use std::collections::HashMap;
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_RANGE};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::str;

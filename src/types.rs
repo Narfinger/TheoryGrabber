@@ -178,12 +178,12 @@ fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
                 .and_hms(14, 0, 0)
                 .with_timezone(&chrono::Utc);
             if perhaps_date >= date {
-                perhaps_date = perhaps_date - Duration::days(1);
+                perhaps_date -= Duration::days(1);
             }
             if perhaps_date.weekday() == Weekday::Sat {
-                perhaps_date = perhaps_date - Duration::days(1);
+                perhaps_date -= Duration::days(1);
             } else if perhaps_date.weekday() == Weekday::Sun {
-                perhaps_date = perhaps_date - Duration::days(2);
+                perhaps_date -= Duration::days(2);
             }
 
             p.published > perhaps_date
@@ -298,7 +298,7 @@ pub enum BasicColumn {
 
 pub fn sanitize_title(title: &str) -> String {
     title
-        .replace("\n", "")
+        .replace('\n', "")
         .replace("  ", " ")
         .replace(std::path::MAIN_SEPARATOR, "")
 }

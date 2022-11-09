@@ -22,17 +22,6 @@ static ECCC: &str = "https://eccc.weizmann.ac.il/year/";
 static BASE_URL: &str = "https://eccc.weizmann.ac.il";
 
 //eccc has a custom format chrono cannot parse, so we build a parser with nom
-/// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
-/// trailing whitespace, returning the output of `inner`.
-fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
-    inner: F,
-) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-where
-    F: Fn(&'a str) -> IResult<&'a str, O, E>,
-{
-    delimited(multispace0, inner, multispace0)
-}
-
 fn parse_u32(input: &str) -> IResult<&str, u32> {
     map_res(recognize(digit1), str::parse)(input)
 }
