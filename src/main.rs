@@ -171,7 +171,6 @@ fn run() -> Result<()> {
     println!("better error handling for resumeable downloads\n");
 
     let config = Arc::new(RwLock::new(config::Config::read_or_default()));
-    let tk: Option<String> = None;
 
     //let filtered_papers = get_and_filter_papers(&config)?;
     let filtered_papers = vec![

@@ -1,6 +1,6 @@
 use chrono::Utc;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
 };
@@ -8,7 +8,8 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Cell, Row, Table, TableState},
+    text::{Span, Spans, Text},
+    widgets::{Cell, List, ListItem, Paragraph, Row, Table, TableState},
     Terminal,
 };
 
@@ -20,8 +21,6 @@ use std::{
 };
 use std::{thread, time::Duration};
 use tui::widgets::{Block, Borders, Widget};
-
-static SHOULD_WE_SAVE: AtomicBool = AtomicBool::new(false);
 
 pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::Error> {
     enable_raw_mode()?;
@@ -40,52 +39,79 @@ pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::
         published: Utc::now(),
     });
     let mut state = TableState::default();
-    println!("leng {}", papers.len());
+    let mut run = true;
+    let mut should_we_save = false;
+    while run {
+        terminal.draw(|f| {
+            // Create a layout into which to place our blocks.
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+                .split(f.size());
 
-    let mut still_running = true;
-    //while still_running {
-    terminal.draw(|f| {
-        // Create a layout into which to place our blocks.
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
-            .split(f.size());
+            let help = List::new(vec![
+                ListItem::new("Use Up and Down to look at paper"),
+                ListItem::new("Use d or Delete, to remove them from download"),
+                ListItem::new("Press Enter to Download"),
+            ]);
+            f.render_widget(help, chunks[0]);
 
-        let block = Block::default()
-            // With a given title...
-            .title("Color Changer")
-            // Borders on every side...
-            .borders(Borders::ALL)
-            // The background of the current color...
-            .style(Style::default().bg(Color::Red));
-        f.render_widget(block, chunks[0]);
+            let items = papers
+                .iter()
+                .map(|p| Row::new(vec![p.title.clone(), p.author_string(), "tttt".to_string()]))
+                .collect::<Vec<Row>>();
+            let table = Table::new(items)
+                //.style(Style::default().fg(Color::Blue))
+                .block(Block::default().title("Papers").borders(Borders::ALL))
+                .header(Row::new(vec!["Col1", "Col2", "Col3"]).style(Style::default()))
+                .widths(&[
+                    Constraint::Length(5),
+                    Constraint::Length(5),
+                    Constraint::Length(10),
+                ])
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+                .highlight_symbol(">>");
 
-        let items = papers
-            .iter()
-            .map(|p| Row::new(vec![p.title.clone(), p.author_string(), "tttt".to_string()]))
-            .collect::<Vec<Row>>();
-        let table = Table::new(vec![
-            Row::new(vec!["aaa", "bbb", "ccc"]).style(Style::default().fg(Color::Green)),
-            Row::new(vec!["aaa", "bb", "cc"]).style(Style::default()),
-        ])
-        //.style(Style::default().fg(Color::Blue))
-        .block(Block::default().title("Papers").borders(Borders::ALL))
-        .header(Row::new(vec!["Col1", "Col2", "Col3"]).style(Style::default()))
-        .widths(&[
-            Constraint::Length(5),
-            Constraint::Length(5),
-            Constraint::Length(10),
-        ])
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol(">>");
+            f.render_stateful_widget(table, chunks[1], &mut state);
 
-        f.render_stateful_widget(table, chunks[1], &mut state);
-        //let block = Block::default().title("Block").borders(Borders::ALL);
-        //f.render_widget(block, size);
-    })?;
-    //}
-    thread::sleep(Duration::from_secs(5));
+            if let Event::Key(key) = event::read().unwrap() {
+                match key.code {
+                    KeyCode::Char('q') => {
+                        run = false;
+                        should_we_save = false;
+                    }
+                    KeyCode::Enter => {
+                        run = false;
+                        should_we_save = true;
+                    }
+                    KeyCode::Down => {
+                        let selected = state.selected().unwrap_or(0);
+                        let new_selected = if selected + 1 >= papers.len() {
+                            selected
+                        } else {
+                            selected + 1
+                        };
 
+                        state.select(Some(new_selected));
+                    }
+                    KeyCode::Up => {
+                        let selected = state.selected().unwrap_or(0);
+                        let new_selected = selected.checked_sub(1).unwrap_or(0);
+                        state.select(Some(new_selected));
+                    }
+                    KeyCode::Delete | KeyCode::Char('D') => {
+                        if let Some(i) = state.selected() {
+                            papers.remove(i);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            //let block = Block::default().title("Block").borders(Borders::ALL);
+            //f.render_widget(block, size);
+        })?;
+    }
     // restore terminal
     disable_raw_mode()?;
     execute!(
@@ -95,12 +121,9 @@ pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::
     )?;
     terminal.show_cursor()?;
 
-    return Ok(vec![]);
-
-    let mut not_finished = true;
-    while not_finished {
-        terminal.draw(|f| {})?;
+    if should_we_save {
+        Ok(papers)
+    } else {
+        Ok(vec![])
     }
-
-    Ok(papers)
 }

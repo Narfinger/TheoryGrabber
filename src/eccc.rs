@@ -7,10 +7,8 @@ use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::character::complete::char;
 use nom::character::complete::digit1;
-use nom::character::complete::multispace0;
 use nom::combinator::{map, map_res, recognize};
-use nom::error::ParseError;
-use nom::sequence::{delimited, pair, tuple};
+use nom::sequence::{pair, tuple};
 use nom::IResult;
 use rayon::prelude::*;
 use select::document::Document;
@@ -62,7 +60,7 @@ fn eccc_rough_date(input: &str) -> IResult<&str, NaiveDate> {
         parse_i32,
     ))(input)?;
 
-    Ok((rest, NaiveDate::from_ymd(year, month, day)))
+    Ok((rest, NaiveDate::from_ymd_opt(year, month, day).unwrap()))
 }
 
 /// Parses a date from the overview page.
@@ -94,7 +92,10 @@ fn eccc_date_time(input: &str) -> IResult<&str, NaiveDateTime> {
     ))(input)?;
     Ok((
         input,
-        NaiveDate::from_ymd(year, month, day).and_hms(hour, minute, 0),
+        NaiveDate::from_ymd_opt(year, month, day)
+            .unwrap()
+            .and_hms_opt(hour, minute, 0)
+            .unwrap(),
     ))
 }
 
@@ -140,14 +141,14 @@ fn date_rough_parse_test1() {
     //yes I am testing every month
     assert_eq!(
         parse_rough_date(" 16th November 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 11, 16))
+        NaiveDate::from_ymd_opt(2017, 11, 16)
     );
 }
 #[test]
 fn date_rough_parse_test2() {
     assert_eq!(
         parse_rough_date(" 3rd November 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 11, 3))
+        NaiveDate::from_ymd_opt(2017, 11, 3)
     );
 }
 
@@ -155,35 +156,35 @@ fn date_rough_parse_test2() {
 fn date_rough_parse_test3() {
     assert_eq!(
         parse_rough_date(" 2nd November 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 11, 2))
+        NaiveDate::from_ymd_opt(2017, 11, 2)
     );
 }
 #[test]
 fn date_rough_parse_test4() {
     assert_eq!(
         parse_rough_date(" 1st October 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 10, 1))
+        NaiveDate::from_ymd_opt(2017, 10, 1)
     );
 }
 #[test]
 fn date_rough_parse_test5() {
     assert_eq!(
         parse_rough_date(" 26th September 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 9, 26))
+        NaiveDate::from_ymd_opt(2017, 9, 26)
     );
 }
 #[test]
 fn date_rough_parse_test6() {
     assert_eq!(
         parse_rough_date(" 30th August 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 8, 30))
+        NaiveDate::from_ymd_opt(2017, 8, 30)
     );
 }
 #[test]
 fn date_rough_parse_test7() {
     assert_eq!(
         parse_rough_date(" 28th July 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 7, 28))
+        NaiveDate::from_ymd_opt(2017, 7, 28)
     );
 }
 
@@ -191,7 +192,7 @@ fn date_rough_parse_test7() {
 fn date_rough_parse_test8() {
     assert_eq!(
         parse_rough_date(" 27th June 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 6, 27))
+        NaiveDate::from_ymd_opt(2017, 6, 27)
     );
 }
 
@@ -199,35 +200,35 @@ fn date_rough_parse_test8() {
 fn date_rough_parse_test9() {
     assert_eq!(
         parse_rough_date(" 28th May 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 5, 28))
+        NaiveDate::from_ymd_opt(2017, 5, 28)
     );
 }
 #[test]
 fn date_rough_parse_test10() {
     assert_eq!(
         parse_rough_date(" 21st April 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 4, 21))
+        NaiveDate::from_ymd_opt(2017, 4, 21)
     );
 }
 #[test]
 fn date_rough_parse_test11() {
     assert_eq!(
         parse_rough_date(" 26th March 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 3, 26))
+        NaiveDate::from_ymd_opt(2017, 3, 26)
     );
 }
 #[test]
 fn date_rough_parse_test12() {
     assert_eq!(
         parse_rough_date(" 23rd February 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 2, 23))
+        NaiveDate::from_ymd_opt(2017, 2, 23)
     );
 }
 #[test]
 fn date_rough_parse_test13() {
     assert_eq!(
         parse_rough_date(" 19th January 2017").ok(),
-        Some(NaiveDate::from_ymd(2017, 1, 19))
+        NaiveDate::from_ymd_opt(2017, 1, 19)
     );
 }
 
@@ -441,7 +442,7 @@ pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     } else {
         utc.day() - 1
     };
-    let naive_filter_date = NaiveDate::from_ymd(utc.year(), utc.month(), days);
+    let naive_filter_date = NaiveDate::from_ymd_opt(utc.year(), utc.month(), days).unwrap();
 
     info!("Found rough papers: {:?}", &rough_papers);
 
