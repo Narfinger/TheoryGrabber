@@ -15,9 +15,6 @@ clap = { version = "4.0.32", features = ["derive"] }
 console = "0.15.4"
 chrono = { version = "0.4.23", features = ["serde"] }              # Date and time library for Rust
 chrono-tz = "0.8.1"
-cursive = { version = "0.20.0", features = ['termion-backend'] }           # A TUI (Text User Interface) library focused on ease-of-use.
-#cursive_table_view = {git = "https://github.com/yorickdowne/cursive_table_view.git", rev="2a8b6d7055fe8249aa54f728da240da00b5c8924"}
-cursive_table_view = "0.14.0"
 log = "0.4.17"
 pretty_env_logger = "0.4.0"
 indicatif = "0.17.2"
@@ -37,3 +34,4 @@ quick-xml = "0.27.1"
 nom = "7.1.2"
 url = "2.3.1"
 directories = "4.0.1"
+tui = "0.19.0"
