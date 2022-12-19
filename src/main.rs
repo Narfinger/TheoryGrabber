@@ -4,8 +4,6 @@ extern crate clap;
 extern crate anyhow;
 extern crate chrono;
 extern crate chrono_tz;
-extern crate cursive;
-extern crate cursive_table_view;
 extern crate indicatif;
 extern crate pretty_env_logger;
 #[macro_use]
@@ -29,16 +27,17 @@ pub mod config;
 pub mod drive;
 pub mod eccc;
 pub mod gui;
-pub mod paper_dialog;
 pub mod types;
 
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
+use chrono::Utc;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
@@ -174,7 +173,25 @@ fn run() -> Result<()> {
     let config = Arc::new(RwLock::new(config::Config::read_or_default()));
     let tk: Option<String> = None;
 
-    let filtered_papers = get_and_filter_papers(&config)?;
+    //let filtered_papers = get_and_filter_papers(&config)?;
+    let filtered_papers = vec![
+        Paper {
+            title: "Test".to_string(),
+            description: "Desc Test".to_string(),
+            link: reqwest::Url::from_str("http://example.com").unwrap(),
+            source: crate::types::Source::ECCC,
+            authors: vec![],
+            published: Utc::now(),
+        },
+        Paper {
+            title: "Test2".to_string(),
+            description: "Desc Test".to_string(),
+            link: reqwest::Url::from_str("http://example.com").unwrap(),
+            source: crate::types::Source::ECCC,
+            authors: vec![],
+            published: Utc::now(),
+        },
+    ];
 
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
@@ -182,7 +199,7 @@ fn run() -> Result<()> {
     }
 
     let is_filtered_empty = filtered_papers.is_empty();
-    if let Some(papers_to_download) = gui::get_selected_papers(filtered_papers) {
+    if let Ok(papers_to_download) = gui::get_selected_papers(filtered_papers) {
         if papers_to_download.is_empty() && !is_filtered_empty {
             println!("No papers to download ({})", console::Emoji("✅", ""));
             return Ok(());

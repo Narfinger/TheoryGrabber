@@ -83,7 +83,7 @@ impl PartialOrd for Paper {
 
 impl Paper {
     /// Returns the author string we will use. Uses `get_last_name_initials`.
-    fn author_string(&self) -> String {
+    pub(crate) fn author_string(&self) -> String {
         self.authors
             .iter()
             .fold(String::from(""), |acc, i| {
@@ -98,7 +98,7 @@ impl Paper {
     }
 
     /// Returns the filename we will save as for a given filename.
-    pub fn filename(&self) -> String {
+    pub(crate) fn filename(&self) -> String {
         let datestring = self.published.format("%Y-%m-%d");
         let mut title = self.title.to_owned();
         title.truncate(75);
