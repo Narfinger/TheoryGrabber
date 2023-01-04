@@ -74,37 +74,39 @@ pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::
 
             f.render_stateful_widget(table, chunks[1], &mut state);
 
-            if let Event::Key(key) = event::read().unwrap() {
-                match key.code {
-                    KeyCode::Char('q') => {
-                        run = false;
-                        should_we_save = false;
-                    }
-                    KeyCode::Enter => {
-                        run = false;
-                        should_we_save = true;
-                    }
-                    KeyCode::Down => {
-                        let selected = state.selected().unwrap_or(0);
-                        let new_selected = if selected + 1 >= papers.len() {
-                            selected
-                        } else {
-                            selected + 1
-                        };
-
-                        state.select(Some(new_selected));
-                    }
-                    KeyCode::Up => {
-                        let selected = state.selected().unwrap_or(0);
-                        let new_selected = selected.checked_sub(1).unwrap_or(0);
-                        state.select(Some(new_selected));
-                    }
-                    KeyCode::Delete | KeyCode::Char('D') => {
-                        if let Some(i) = state.selected() {
-                            papers.remove(i);
+            if event::poll(Duration::from_millis(100)).unwrap_or(false) {
+                if let Event::Key(key) = event::read().unwrap() {
+                    match key.code {
+                        KeyCode::Char('q') => {
+                            run = false;
+                            should_we_save = false;
                         }
+                        KeyCode::Enter => {
+                            run = false;
+                            should_we_save = true;
+                        }
+                        KeyCode::Down => {
+                            let selected = state.selected().unwrap_or(0);
+                            let new_selected = if selected + 1 >= papers.len() {
+                                selected
+                            } else {
+                                selected + 1
+                            };
+
+                            state.select(Some(new_selected));
+                        }
+                        KeyCode::Up => {
+                            let selected = state.selected().unwrap_or(0);
+                            let new_selected = selected.saturating_sub(1);
+                            state.select(Some(new_selected));
+                        }
+                        KeyCode::Delete | KeyCode::Char('D') => {
+                            if let Some(i) = state.selected() {
+                                papers.remove(i);
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
 
