@@ -1,7 +1,10 @@
 TheoryGrabber
 ==========================
-Grabs papers from arxiv and eccc, displayes them nicely and puts them into a google drive folder.
+Grabs papers from arxiv and eccc, displayes them nicely and puts them into a local folder.
 
-This needs cargo and rust. Also we need your google api details. Create a project under https://console.cloud.google.com/ with api access to drive. Go under Api&Services -> Credentials and download the json file. Put this into the directory under client_secret.json and you are done.
+Howto:
+Start with theorygrabber -l <directory> to set up.
+Use theorygrabber -c to set as current time.
+Wait a couple of days and call theorygrabber without any arguments.
 
-Compile & run with `cargo run` or `cargo run --release`
+Notice that this uses the cursive and cursive-table-view libraries which are sometimes out of date.
