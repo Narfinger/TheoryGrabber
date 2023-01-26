@@ -1,5 +1,6 @@
 use crate::types::Paper;
 use anyhow::Result;
+use serde_derive::{Deserialize, Serialize};
 use std::fs::File;
 use std::str;
 

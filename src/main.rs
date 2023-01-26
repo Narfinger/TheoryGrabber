@@ -1,26 +1,5 @@
-#![recursion_limit = "128"]
-extern crate clap;
 #[macro_use]
 extern crate anyhow;
-extern crate chrono;
-extern crate chrono_tz;
-extern crate indicatif;
-extern crate pretty_env_logger;
-#[macro_use]
-extern crate log;
-extern crate rayon;
-extern crate reqwest;
-extern crate select;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate console;
-extern crate nom;
-extern crate quick_xml;
-extern crate tempfile;
-extern crate tokio;
-extern crate toml;
-extern crate url;
 
 pub mod arxiv;
 pub mod config;
@@ -33,6 +12,7 @@ use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
+use log::info;
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;

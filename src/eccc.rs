@@ -3,6 +3,7 @@ use crate::types::{Paper, Source};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Jerusalem;
+use log::info;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::character::complete::char;
