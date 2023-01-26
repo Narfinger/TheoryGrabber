@@ -6,6 +6,7 @@ use chrono::Utc;
 use chrono::Weekday;
 use chrono_tz::America::New_York;
 use directories::ProjectDirs;
+use itertools::Itertools;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
@@ -82,7 +83,7 @@ impl PartialOrd for Paper {
 }
 
 impl Paper {
-    /// Returns the author string we will use. Uses `get_last_name_initials`.
+    /// Returns the author string we will use for filename. Uses `get_last_name_initials`.
     pub(crate) fn author_string(&self) -> String {
         self.authors
             .iter()
@@ -95,6 +96,16 @@ impl Paper {
                 acc + &lastname.to_string()
             })
             .to_uppercase()
+    }
+
+    pub(crate) fn format_author(&self) -> String {
+        Itertools::intersperse(
+            self.authors
+                .iter()
+                .map(|a| a.split_whitespace().last().unwrap_or("")),
+            ", ",
+        )
+        .collect()
     }
 
     /// Returns the filename we will save as for a given filename.

@@ -8,8 +8,8 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Span, Spans, Text},
-    widgets::{Cell, List, ListItem, Paragraph, Row, Table, TableState},
+    text::{Span, Text},
+    widgets::{List, ListItem, Paragraph, Row, Table, TableState, Wrap},
     Frame, Terminal,
 };
 
@@ -24,35 +24,84 @@ use tui::widgets::{Block, Borders, Widget};
 
 fn render<B: Backend>(papers: &[Paper], f: &mut Frame<B>, state: &mut TableState) {
     // Create a layout into which to place our blocks.
-    let chunks = Layout::default()
+    let main_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
         .split(f.size());
 
     let help = List::new(vec![
         ListItem::new("Use Up and Down to look at paper"),
         ListItem::new("Use d or Delete, to remove them from download"),
         ListItem::new("Press Enter to Download"),
+        ListItem::new("Use Esc or q to quit and not save the current state"),
     ]);
-    f.render_widget(help, chunks[0]);
+    f.render_widget(help, main_layout[0]);
 
     let items = papers
         .iter()
-        .map(|p| Row::new(vec![p.title.clone(), p.author_string(), "tttt".to_string()]))
+        .map(|p: &Paper| {
+            Row::new(vec![
+                Span::styled(p.title.clone(), Style::default().fg(Color::Green)),
+                Span::styled(p.format_author(), Style::default().fg(Color::Blue)),
+                Span::styled(p.source.to_string(), Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    p.published.to_rfc2822(),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ])
+        })
         .collect::<Vec<Row>>();
     let table = Table::new(items)
         //.style(Style::default().fg(Color::Blue))
         .block(Block::default().title("Papers").borders(Borders::ALL))
-        .header(Row::new(vec!["Col1", "Col2", "Col3"]).style(Style::default()))
+        .header(
+            Row::new(vec!["Title", "Authors", "Source", "Date"])
+                .style(Style::default().add_modifier(Modifier::UNDERLINED)),
+        )
         .widths(&[
+            Constraint::Length(60),
+            Constraint::Length(20),
             Constraint::Length(5),
-            Constraint::Length(5),
-            Constraint::Length(10),
+            Constraint::Length(15),
         ])
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">>");
 
-    f.render_stateful_widget(table, chunks[1], state);
+    let p_abstract_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
+        .split(main_layout[1]);
+    f.render_stateful_widget(table, p_abstract_layout[0], state);
+
+    let selected_paper = state.selected().and_then(|i| papers.get(i));
+    if let Some(paper) = selected_paper {
+        let details_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Percentage(5),
+                    Constraint::Percentage(5),
+                    Constraint::Percentage(90),
+                ]
+                .as_ref(),
+            )
+            .split(p_abstract_layout[1]);
+
+        {
+            let display = Span::raw(paper.title.clone());
+            let p = Paragraph::new(display).wrap(Wrap { trim: false });
+            f.render_widget(p, details_layout[0]);
+        }
+        {
+            let display = Span::raw(paper.format_author());
+            let p = Paragraph::new(display).wrap(Wrap { trim: false });
+            f.render_widget(p, details_layout[1]);
+        }
+
+        let p_abstract_text = Text::from(paper.description.clone());
+        let p_abstract_para = Paragraph::new(p_abstract_text);
+        f.render_widget(p_abstract_para, details_layout[2])
+    }
 }
 
 fn input_handle(
@@ -64,7 +113,7 @@ fn input_handle(
     if event::poll(Duration::from_millis(100)).unwrap_or(false) {
         if let Event::Key(key) = event::read().unwrap() {
             match key.code {
-                KeyCode::Char('q') => {
+                KeyCode::Esc | KeyCode::Char('q') => {
                     *run = false;
                     *should_we_save = false;
                 }
@@ -87,9 +136,12 @@ fn input_handle(
                     let new_selected = selected.saturating_sub(1);
                     state.select(Some(new_selected));
                 }
-                KeyCode::Delete | KeyCode::Char('D') => {
+                KeyCode::Delete | KeyCode::Char('d') => {
                     if let Some(i) = state.selected() {
                         papers.remove(i);
+                        let selected = state.selected().unwrap_or(0);
+                        let new_selected = selected.saturating_sub(1);
+                        state.select(Some(new_selected));
                     }
                 }
                 _ => {}
@@ -106,15 +158,8 @@ pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::
     let mut terminal = Terminal::new(backend)?;
 
     let mut papers = papers;
-    papers.push(Paper {
-        title: "Test".to_string(),
-        description: "Desc Test".to_string(),
-        link: reqwest::Url::from_str("http://example.com").unwrap(),
-        source: crate::types::Source::ECCC,
-        authors: vec![],
-        published: Utc::now(),
-    });
     let mut state = TableState::default();
+    state.select(Some(papers.len() - 1));
     let mut run = true;
     let mut should_we_save = false;
     while run {

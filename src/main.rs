@@ -166,31 +166,27 @@ fn setup() -> Result<String> {
 }
 
 fn run() -> Result<()> {
-    println!("Ideas for improvement:");
-    println!("sub implement dialog for deleting to support delete key and stuff");
-    println!("better error handling for resumeable downloads\n");
-
     let config = Arc::new(RwLock::new(config::Config::read_or_default()));
 
-    //let filtered_papers = get_and_filter_papers(&config)?;
-    let filtered_papers = vec![
-        Paper {
-            title: "Test".to_string(),
-            description: "Desc Test".to_string(),
-            link: reqwest::Url::from_str("http://example.com").unwrap(),
-            source: crate::types::Source::ECCC,
-            authors: vec![],
-            published: Utc::now(),
-        },
-        Paper {
-            title: "Test2".to_string(),
-            description: "Desc Test".to_string(),
-            link: reqwest::Url::from_str("http://example.com").unwrap(),
-            source: crate::types::Source::ECCC,
-            authors: vec![],
-            published: Utc::now(),
-        },
-    ];
+    // let filtered_papers = vec![
+    //     Paper {
+    //         title: "Test".to_string(),
+    //         description: "Desc Test".to_string(),
+    //         link: reqwest::Url::from_str("http://example.com").unwrap(),
+    //         source: crate::types::Source::ECCC,
+    //         authors: vec![],
+    //         published: Utc::now(),
+    //     },
+    //     Paper {
+    //         title: "Test2".to_string(),
+    //         description: "Desc Test".to_string(),
+    //         link: reqwest::Url::from_str("http://example.com").unwrap(),
+    //         source: crate::types::Source::ECCC,
+    //         authors: vec![],
+    //         published: Utc::now(),
+    //     },
+    // ];
+    let filtered_papers = get_and_filter_papers(&config)?;
 
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
