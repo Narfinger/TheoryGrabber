@@ -6,7 +6,7 @@ use crossterm::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout},
+    layout::{self, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Text},
     widgets::{List, ListItem, Paragraph, Row, Table, TableState, Wrap},
@@ -14,65 +14,30 @@ use tui::{
 };
 
 use crate::types::Paper;
-use std::{
-    io,
-    str::FromStr,
-    sync::atomic::{AtomicBool, Ordering},
-};
-use std::{thread, time::Duration};
-use tui::widgets::{Block, Borders, Widget};
+use std::io;
+use std::time::Duration;
+use tui::widgets::{Block, Borders};
 
-fn render<B: Backend>(papers: &[Paper], f: &mut Frame<B>, state: &mut TableState) {
-    // Create a layout into which to place our blocks.
-    let main_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
-        .split(f.size());
+/// How should we style a paper in a table? Returns a row.
+fn render_paper<B: Backend>(p: &Paper) -> Row {
+    Row::new(vec![
+        Span::styled(p.title.clone(), Style::default().fg(Color::Green)),
+        Span::styled(p.format_author(), Style::default().fg(Color::Blue)),
+        Span::styled(p.source.to_string(), Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            p.published.to_rfc2822(),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ])
+}
 
-    let help = List::new(vec![
-        ListItem::new("Use Up and Down to look at paper"),
-        ListItem::new("Use d or Delete, to remove them from download"),
-        ListItem::new("Press Enter to Download"),
-        ListItem::new("Use Esc or q to quit and not save the current state"),
-    ]);
-    f.render_widget(help, main_layout[0]);
-
-    let items = papers
-        .iter()
-        .map(|p: &Paper| {
-            Row::new(vec![
-                Span::styled(p.title.clone(), Style::default().fg(Color::Green)),
-                Span::styled(p.format_author(), Style::default().fg(Color::Blue)),
-                Span::styled(p.source.to_string(), Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    p.published.to_rfc2822(),
-                    Style::default().fg(Color::DarkGray),
-                ),
-            ])
-        })
-        .collect::<Vec<Row>>();
-    let table = Table::new(items)
-        //.style(Style::default().fg(Color::Blue))
-        .block(Block::default().title("Papers").borders(Borders::ALL))
-        .header(
-            Row::new(vec!["Title", "Authors", "Source", "Date"])
-                .style(Style::default().add_modifier(Modifier::UNDERLINED)),
-        )
-        .widths(&[
-            Constraint::Length(60),
-            Constraint::Length(20),
-            Constraint::Length(5),
-            Constraint::Length(15),
-        ])
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol(">>");
-
-    let p_abstract_layout = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
-        .split(main_layout[1]);
-    f.render_stateful_widget(table, p_abstract_layout[0], state);
-
+/// Renders the right side details page
+fn render_details<B: Backend>(
+    state: &TableState,
+    papers: &[Paper],
+    p_abstract_layout: &Vec<Rect>,
+    f: &mut Frame<B>,
+) {
     let selected_paper = state.selected().and_then(|i| papers.get(i));
     if let Some(paper) = selected_paper {
         let details_layout = Layout::default()
@@ -104,6 +69,56 @@ fn render<B: Backend>(papers: &[Paper], f: &mut Frame<B>, state: &mut TableState
     }
 }
 
+fn render_help<B: Backend>(main_layout: &Vec<Rect>, f: &mut Frame<B>) {
+    let help = List::new(vec![
+        ListItem::new("Use Up and Down to look at paper"),
+        ListItem::new("Use d or Delete, to remove them from download"),
+        ListItem::new("Press Enter to Download"),
+        ListItem::new("Use Esc or q to quit and not save the current state"),
+    ]);
+    f.render_widget(help, main_layout[0]);
+}
+
+/// Main Render
+fn render<B: Backend>(papers: &[Paper], f: &mut Frame<B>, state: &mut TableState) {
+    // Create a layout into which to place our blocks.
+    let main_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
+        .split(f.size());
+
+    render_help(&main_layout, f);
+
+    let items = papers
+        .iter()
+        .map(|p: &Paper| render_paper::<B>(p))
+        .collect::<Vec<Row>>();
+    let table = Table::new(items)
+        //.style(Style::default().fg(Color::Blue))
+        .block(Block::default().title("Papers").borders(Borders::ALL))
+        .header(
+            Row::new(vec!["Title", "Authors", "Source", "Date"])
+                .style(Style::default().add_modifier(Modifier::UNDERLINED)),
+        )
+        .widths(&[
+            Constraint::Length(60),
+            Constraint::Length(20),
+            Constraint::Length(5),
+            Constraint::Length(15),
+        ])
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol(">>");
+
+    let p_abstract_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
+        .split(main_layout[1]);
+    f.render_stateful_widget(table, p_abstract_layout[0], state);
+
+    render_details(state, papers, &p_abstract_layout, f);
+}
+
+/// Handles the input
 fn input_handle(
     papers: &mut Vec<Paper>,
     run: &mut bool,
@@ -150,6 +165,7 @@ fn input_handle(
     }
 }
 
+/// Start point for the gui. Runs it in a loop and returns the paper we want to download or an empty list
 pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
