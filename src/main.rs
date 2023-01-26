@@ -31,13 +31,11 @@ pub mod types;
 
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
-use chrono::Utc;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;

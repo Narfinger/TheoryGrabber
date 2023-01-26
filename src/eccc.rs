@@ -240,7 +240,7 @@ fn date_parse_test() {
     //with timezone
     assert_eq!(
         parse_date(" 16th November 2017 04:24").ok(),
-        Some(Utc.ymd(2017, 11, 16).and_hms(2, 24, 0))
+        Utc.with_ymd_and_hms(2017, 11, 16, 2, 24, 0).latest()
     );
 }
 
@@ -355,7 +355,7 @@ fn parse_single_div(div: Node) -> Result<RoughPaper> {
 fn parse_eccc_summary_for_year(year: i32) -> Result<Vec<RoughPaper>> {
     let url = format!("{}{:?}/", &ECCC, year);
     let res = {
-        let res = reqwest::blocking::get(&url).context("Can't get eccc")?;
+        let res = reqwest::blocking::get(url).context("Can't get eccc")?;
         if !res.status().is_success() {
             return Err(anyhow!("Some error in getting the reqwuest"));
         }

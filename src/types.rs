@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::Datelike;
 use chrono::Duration;
+use chrono::Timelike;
 #[cfg(test)]
 use chrono::Utc;
 use chrono::Weekday;
@@ -184,9 +185,13 @@ fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
         Source::ECCC => p.published >= date,
         Source::Arxiv => {
             let mut perhaps_date: chrono::DateTime<chrono::Utc> = date
-                .date()
                 .with_timezone(&New_York)
-                .and_hms(14, 0, 0)
+                .with_hour(14)
+                .unwrap()
+                .with_minute(0)
+                .unwrap()
+                .with_second(0)
+                .unwrap()
                 .with_timezone(&chrono::Utc);
             if perhaps_date >= date {
                 perhaps_date -= Duration::days(1);

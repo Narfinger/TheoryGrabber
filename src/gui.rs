@@ -1,4 +1,3 @@
-use chrono::Utc;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -6,7 +5,7 @@ use crossterm::{
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{self, Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Text},
     widgets::{List, ListItem, Paragraph, Row, Table, TableState, Wrap},
@@ -35,7 +34,7 @@ fn render_paper<B: Backend>(p: &Paper) -> Row {
 fn render_details<B: Backend>(
     state: &TableState,
     papers: &[Paper],
-    p_abstract_layout: &Vec<Rect>,
+    p_abstract_layout: &[Rect],
     f: &mut Frame<B>,
 ) {
     let selected_paper = state.selected().and_then(|i| papers.get(i));
@@ -69,7 +68,7 @@ fn render_details<B: Backend>(
     }
 }
 
-fn render_help<B: Backend>(main_layout: &Vec<Rect>, f: &mut Frame<B>) {
+fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>) {
     let help = List::new(vec![
         ListItem::new("Use Up and Down to look at paper"),
         ListItem::new("Use d or Delete, to remove them from download"),
