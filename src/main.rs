@@ -21,6 +21,9 @@ use std::sync::RwLock;
 use std::thread;
 use tempfile::TempDir;
 
+const OK_EMOJI: char = '\u{2705}';
+const NOT_OK_EMOJI: char = '\u{274C}';
+
 /// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
     println!("We will download the following papers:");
@@ -179,7 +182,10 @@ fn run() -> Result<()> {
     let is_filtered_empty = filtered_papers.is_empty();
     if let Ok(papers_to_download) = gui::get_selected_papers(filtered_papers) {
         if papers_to_download.is_empty() && !is_filtered_empty {
-            println!("No papers to download ({})", console::Emoji("✅", ""));
+            println!(
+                "No papers to download ({})",
+                console::Emoji(&OK_EMOJI.to_string(), "")
+            );
             return Ok(());
             //return config::write_paper_published(last_paper);
         }
@@ -208,8 +214,8 @@ fn run() -> Result<()> {
     } else {
         println!(
             "Nothing to download ({}) and we are not saving ({}).",
-            console::Emoji("❌", "X"),
-            console::Emoji("❌", "X")
+            console::Emoji(&NOT_OK_EMOJI.to_string(), "X"),
+            console::Emoji(&NOT_OK_EMOJI.to_string(), "X")
         );
     }
     Ok(())
