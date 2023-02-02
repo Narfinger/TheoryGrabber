@@ -152,10 +152,15 @@ fn input_handle(
                 }
                 KeyCode::Delete | KeyCode::Char('d') => {
                     if let Some(i) = state.selected() {
-                        papers.remove(i);
-                        let selected = state.selected().unwrap_or(0);
-                        let new_selected = selected.saturating_sub(1);
-                        state.select(Some(new_selected));
+                        if i < papers.len() {
+                            // sometimes we could delete things despite them being already deleted
+                            papers.remove(i);
+                            let selected = state.selected().unwrap_or(0);
+                            let new_selected = selected.saturating_sub(1);
+                            state.select(Some(new_selected));
+                        } else {
+                            state.select(None);
+                        }
                     }
                 }
                 _ => {}

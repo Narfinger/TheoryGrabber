@@ -23,6 +23,11 @@ use tempfile::TempDir;
 
 /// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
+    println!("We will download the following papers:");
+    for i in papers {
+        println!("{}", i.title);
+    }
+
     let mut files: Vec<DownloadedPaper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
     progressbar.set_message("Downloading Papers");

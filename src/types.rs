@@ -38,7 +38,7 @@ impl fmt::Display for Source {
             Source::ECCC => "ECCC",
         };
 
-        write!(f, "{}", out)
+        write!(f, "{out}")
     }
 }
 
