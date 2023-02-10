@@ -52,13 +52,13 @@ fn render_details<B: Backend>(
             .split(p_abstract_layout[1]);
 
         {
-            let display = Span::raw(paper.title.clone());
-            let p = Paragraph::new(display).wrap(Wrap { trim: false });
+            let display = Text::from(paper.title.clone());
+            let p = Paragraph::new(display).wrap(Wrap { trim: true });
             f.render_widget(p, details_layout[0]);
         }
         {
-            let display = Span::raw(paper.format_author());
-            let p = Paragraph::new(display).wrap(Wrap { trim: false });
+            let display = Text::from(paper.format_author());
+            let p = Paragraph::new(display).wrap(Wrap { trim: true });
             f.render_widget(p, details_layout[1]);
         }
 
