@@ -8,7 +8,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Text},
-    widgets::{List, ListItem, Paragraph, Row, Table, TableState, Wrap},
+    widgets::{BorderType, List, ListItem, Paragraph, Row, Table, TableState, Wrap},
     Frame, Terminal,
 };
 
@@ -53,17 +53,25 @@ fn render_details<B: Backend>(
 
         {
             let display = Text::from(paper.title.clone());
-            let p = Paragraph::new(display).wrap(Wrap { trim: true });
+            let p = Paragraph::new(display).wrap(Wrap { trim: false });
             f.render_widget(p, details_layout[0]);
         }
         {
             let display = Text::from(paper.format_author());
-            let p = Paragraph::new(display).wrap(Wrap { trim: true });
+            let p = Paragraph::new(display).wrap(Wrap { trim: false });
             f.render_widget(p, details_layout[1]);
         }
 
         let p_abstract_text = Text::from(paper.description.clone());
-        let p_abstract_para = Paragraph::new(p_abstract_text);
+
+        let p_abstract_para = Paragraph::new(p_abstract_text)
+            .wrap(Wrap { trim: false })
+            .block(
+                Block::default()
+                    .title("Abstract")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Double),
+            );
         f.render_widget(p_abstract_para, details_layout[2])
     }
 }
