@@ -78,7 +78,7 @@ fn render_details<B: Backend>(
 
 fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>) {
     let help = List::new(vec![
-        ListItem::new("Use Up and Down to look at paper"),
+        ListItem::new("Use Up (or w) and Down to look at paper"),
         ListItem::new("Use d or Delete, to remove them from download"),
         ListItem::new("Press Enter to Download"),
         ListItem::new("Use Esc or q to quit and not save the current state"),
@@ -153,7 +153,7 @@ fn input_handle(
 
                     state.select(Some(new_selected));
                 }
-                KeyCode::Up => {
+                KeyCode::Up | KeyCode::Char('w') => {
                     let selected = state.selected().unwrap_or(0);
                     let new_selected = selected.saturating_sub(1);
                     state.select(Some(new_selected));
