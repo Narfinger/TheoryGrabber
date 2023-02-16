@@ -44,19 +44,19 @@ impl fmt::Display for Source {
 
 /// Struct for denoting a paper.
 #[derive(Clone, Eq, PartialEq)]
-pub struct Paper {
+pub(crate) struct Paper {
     /// The title of the paper.
-    pub title: String,
+    pub(crate) title: String,
     /// Description/Abstract of the paper.
-    pub description: String,
+    pub(crate) description: String,
     /// Url where the paper can be downloaded.
-    pub link: reqwest::Url,
+    pub(crate) link: reqwest::Url,
     /// Where did we parse the paper from.
-    pub source: Source,
+    pub(crate) source: Source,
     /// The publication date as given by the source in Utc timezone.
-    pub published: chrono::DateTime<chrono::Utc>,
+    pub(crate) published: chrono::DateTime<chrono::Utc>,
     /// A list of authors which can be in arbitrary order.
-    pub authors: Vec<String>,
+    pub(crate) authors: Vec<String>,
 }
 
 impl std::fmt::Display for Paper {
@@ -121,15 +121,15 @@ impl Paper {
 }
 
 /// This represents a paper that is downloaded.
-pub struct DownloadedPaper<'a> {
+pub(crate) struct DownloadedPaper<'a> {
     /// The paper that is downloaded
-    pub paper: &'a Paper,
+    pub(crate) paper: &'a Paper,
     /// The path where we stored the pdf file
-    pub path: PathBuf,
+    pub(crate) path: PathBuf,
 }
 
 /// Helper function to print authors.
-pub fn print_authors(paper: &Paper) -> String {
+pub(crate) fn print_authors(paper: &Paper) -> String {
     //if let Some(x) = paper.authors.first() {
     let mut iterator = paper.authors.iter();
     let first = iterator.next().unwrap();
@@ -210,7 +210,7 @@ fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
 /// Filters papers.
 /// Arxiv needs a special filtering as there could be following occurence.
 /// Arxiv publishes at (for example) UTC 00:00. Papers that are submitted  at UTC 01:00 are not included. If we check at UTC 02:00, we lose these papers as we filter with UTC>= 02:00. We use `special_filter`.
-pub fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
+pub(crate) fn filter_papers(paper: Vec<Paper>, date: chrono::DateTime<chrono::Utc>) -> Vec<Paper> {
     paper
         .into_iter()
         .filter(|p| special_filter(date, p))
@@ -291,13 +291,13 @@ fn dedup_test() {
 }
 
 /// Remove papers that are doubled in the vector and keep the ECCC version. The test cases are probably the best example.
-pub fn dedup_papers(paper: &mut Vec<Paper>) {
+pub(crate) fn dedup_papers(paper: &mut Vec<Paper>) {
     let v = paper.clone();
     paper.retain(|q| !fuzzy_exists_equal_different_source(&v, q));
 }
 
 /// do not show paper we already downloaded
-pub fn remove_downloaded(paper: &mut Vec<Paper>, c: &Arc<RwLock<Config>>) {
+pub(crate) fn remove_downloaded(paper: &mut Vec<Paper>, c: &Arc<RwLock<Config>>) {
     if let Some(ref d) = c.read().unwrap().local_store {
         let base_path = PathBuf::from(d);
         paper.retain(|p| !base_path.join(p.filename()).exists());
@@ -306,13 +306,13 @@ pub fn remove_downloaded(paper: &mut Vec<Paper>, c: &Arc<RwLock<Config>>) {
 
 /// Column Type for the cursive view.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub enum BasicColumn {
+pub(crate) enum BasicColumn {
     Title,
     Source,
     Published,
 }
 
-pub fn sanitize_title(title: &str) -> String {
+pub(crate) fn sanitize_title(title: &str) -> String {
     title
         .replace('\n', "")
         .replace("  ", " ")

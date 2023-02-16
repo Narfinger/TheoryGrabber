@@ -10,7 +10,7 @@ use url::Url;
 static ARXIV: &str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
 
 /// Parses the Arxiv xml and gives the last 100 papers.
-pub fn parse_arxiv() -> Result<Vec<Paper>> {
+pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
     enum Tag {
         Entry,
         Published,

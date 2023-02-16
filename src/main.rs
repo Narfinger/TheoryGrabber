@@ -180,7 +180,10 @@ fn run() -> Result<()> {
     }
 
     let is_filtered_empty = filtered_papers.is_empty();
-    if let Ok(papers_to_download) = gui::get_selected_papers(filtered_papers) {
+    if let Ok(papers_to_download) = gui::get_selected_papers(
+        filtered_papers,
+        config.read().unwrap().last_checked_arxiv.unwrap(),
+    ) {
         if papers_to_download.is_empty() && !is_filtered_empty {
             println!(
                 "No papers to download ({})",

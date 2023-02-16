@@ -5,16 +5,16 @@ use std::io::{Read, Write};
 
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize)]
-pub struct Config {
+pub(crate) struct Config {
     /// The Utc time when we last checked for new papers.
     last_checked: chrono::DateTime<chrono::Utc>,
     /// the google drive directory id.
-    pub directory_id: Option<String>,
+    pub(crate) directory_id: Option<String>,
     /// ECCC time
-    pub last_checked_eccc: Option<chrono::DateTime<chrono::Utc>>,
+    pub(crate) last_checked_eccc: Option<chrono::DateTime<chrono::Utc>>,
     /// Arxiv time
-    pub last_checked_arxiv: Option<chrono::DateTime<chrono::Utc>>,
-    pub local_store: Option<String>,
+    pub(crate) last_checked_arxiv: Option<chrono::DateTime<chrono::Utc>>,
+    pub(crate) local_store: Option<String>,
 }
 
 impl Default for Config {

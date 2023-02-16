@@ -433,7 +433,7 @@ fn parse_eccc_details(p: &RoughPaper) -> Result<Paper> {
 }
 
 /// This parses the whole ECCC by first looking at the current year, getting these details and filtering and then parsing the details pages to construct full papers.
-pub fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
+pub(crate) fn parse_eccc(utc: DateTime<Utc>) -> Result<Vec<Paper>> {
     let rough_papers = parse_eccc_summary()?;
     // the -1 should not be necessary but we might loose a day in the utc to naivedate conversion.
     // wrong results will be removed in the second filter

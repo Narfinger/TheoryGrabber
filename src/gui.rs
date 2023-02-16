@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -76,25 +77,44 @@ fn render_details<B: Backend>(
     }
 }
 
-fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>) {
+fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: DateTime<Utc>) {
+    let layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .split(main_layout[0]);
+
     let help = List::new(vec![
         ListItem::new("Use Up (or w) and Down to look at paper"),
         ListItem::new("Use d or Delete, to remove them from download"),
         ListItem::new("Press Enter to Download"),
         ListItem::new("Use Esc or q to quit and not save the current state"),
     ]);
-    f.render_widget(help, main_layout[0]);
+    f.render_widget(help, layout[0]);
+
+    let dates = List::new(vec![
+        ListItem::new(format!(
+            "Filter Date: {}",
+            (filter_date - chrono::Duration::days(1)).format("%d-%m-%Y")
+        )),
+        ListItem::new(format!("Today: {}", Utc::now().format("%d-%m-%Y"))),
+    ]);
+    f.render_widget(dates, layout[1]);
 }
 
 /// Main Render
-fn render<B: Backend>(papers: &[Paper], f: &mut Frame<B>, state: &mut TableState) {
+fn render<B: Backend>(
+    papers: &[Paper],
+    f: &mut Frame<B>,
+    state: &mut TableState,
+    filter_date: DateTime<Utc>,
+) {
     // Create a layout into which to place our blocks.
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
         .split(f.size());
 
-    render_help(&main_layout, f);
+    render_help(&main_layout, f, filter_date);
 
     let items = papers
         .iter()
@@ -178,7 +198,10 @@ fn input_handle(
 }
 
 /// Start point for the gui. Runs it in a loop and returns the paper we want to download or an empty list
-pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::Error> {
+pub(crate) fn get_selected_papers(
+    papers: Vec<Paper>,
+    filter_date: DateTime<Utc>,
+) -> Result<Vec<Paper>, io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -192,7 +215,7 @@ pub(crate) fn get_selected_papers(papers: Vec<Paper>) -> Result<Vec<Paper>, io::
     let mut should_we_save = false;
     while run {
         terminal.draw(|f| {
-            render(&papers, f, &mut state);
+            render(&papers, f, &mut state, filter_date);
             input_handle(&mut papers, &mut run, &mut should_we_save, &mut state);
         })?;
     }

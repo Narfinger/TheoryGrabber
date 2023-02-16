@@ -26,7 +26,7 @@ struct FileUploadJSON {
 /// Uploads a file to google drive to the directory given by `fileid`.
 /// This uses the resubmeable upload feature by first uploading the metadata and then uploading the file via the resumeable url method.
 /// Currently we do not support resuming a broken upload and just error out.
-pub fn upload_file_or_local(
+pub(crate) fn upload_file_or_local(
     //tk: &Option<oauth2::basic::BasicTokenResponse>,
     f: File,
     paper: &Paper,
