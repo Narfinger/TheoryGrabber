@@ -209,6 +209,7 @@ pub(crate) fn get_selected_papers(
     let mut terminal = Terminal::new(backend)?;
 
     let mut papers = papers;
+    papers.sort_unstable_by(|a, b| b.cmp(a));
     let mut state = TableState::default();
     state.select(Some(papers.len() - 1));
     let mut run = true;
