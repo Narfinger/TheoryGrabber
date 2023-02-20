@@ -20,6 +20,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
 use tempfile::TempDir;
+use types::Source;
 
 const OK_EMOJI: char = '\u{2705}';
 const NOT_OK_EMOJI: char = '\u{274C}';
@@ -153,44 +154,37 @@ fn setup() -> Result<String> {
 
 fn run() -> Result<()> {
     let config = Arc::new(RwLock::new(config::Config::read_or_default()));
-
-    // let filtered_papers = vec![
-    //     Paper {
-    //         title: "Test".to_string(),
-    //         description: "Desc Test".to_string(),
-    //         link: reqwest::Url::from_str("http://example.com").unwrap(),
-    //         source: crate::types::Source::ECCC,
-    //         authors: vec![],
-    //         published: Utc::now(),
-    //     },
-    //     Paper {
-    //         title: "Test2".to_string(),
-    //         description: "Desc Test".to_string(),
-    //         link: reqwest::Url::from_str("http://example.com").unwrap(),
-    //         source: crate::types::Source::ECCC,
-    //         authors: vec![],
-    //         published: Utc::now(),
-    //     },
-    // ];
     let filtered_papers = get_and_filter_papers(&config)?;
 
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
-        //return config::write_now();
     }
 
     let is_filtered_empty = filtered_papers.is_empty();
+    let new_arxiv_date = config.read().unwrap().last_checked_arxiv.or(filtered_papers
+        .iter()
+        .filter(|p| p.source == Source::Arxiv)
+        .map(|p| p.published)
+        .last());
+    let new_eccc_date = config.read().unwrap().last_checked_eccc.or(filtered_papers
+        .iter()
+        .filter(|p| p.source == Source::ECCC)
+        .map(|p| p.published)
+        .last());
+    config.write().unwrap().last_checked_arxiv = new_arxiv_date;
+    config.write().unwrap().last_checked_eccc = new_eccc_date;
+
     if let Ok(papers_to_download) = gui::get_selected_papers(
         filtered_papers,
         config.read().unwrap().last_checked_arxiv.unwrap(),
     ) {
         if papers_to_download.is_empty() && !is_filtered_empty {
             println!(
-                "No papers to download ({})",
+                "No papers to download ({}) we are saving ({})",
+                console::Emoji(&OK_EMOJI.to_string(), ""),
                 console::Emoji(&OK_EMOJI.to_string(), "")
             );
-            return Ok(());
-            //return config::write_paper_published(last_paper);
+            return config.write().unwrap().write();
         }
 
         if let Ok(dir) = TempDir::new() {
@@ -210,9 +204,7 @@ fn run() -> Result<()> {
                     .context("Uploading function has error")?;
             }
             progressbar.finish();
-            (*config.write().unwrap()).write()?;
-            //config::write_paper_published(last_paper)?;
-            //config::write_now()?;
+            return config.write().unwrap().write();
         }
     } else {
         println!(
