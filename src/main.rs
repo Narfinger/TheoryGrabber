@@ -89,8 +89,7 @@ fn get_and_filter_papers(config: &config::Config) -> Result<Vec<Paper>> {
     );
     progress_fetch_bar.enable_steady_tick(std::time::Duration::new(0, 100));
 
-    let c = config.clone();
-    let time = c.last_checked_arxiv.unwrap_or_else(chrono::Utc::now);
+    let time = config.last_checked_arxiv.unwrap_or_else(chrono::Utc::now);
     let handle = thread::spawn(move || {
         let arxiv_papers = arxiv::parse_arxiv().map(|p| types::filter_papers(p, time));
         if let Ok(mut arxiv_papers) = arxiv_papers {
@@ -144,16 +143,18 @@ fn run() -> Result<()> {
 
     let is_filtered_empty = filtered_papers.is_empty();
     // we need to get the first one as it is in descending order
-    let new_arxiv_date = config.last_checked_arxiv.or(filtered_papers
+    let new_arxiv_date = filtered_papers
         .iter()
         .filter(|p| p.source == Source::Arxiv)
         .map(|p| p.published)
-        .next());
-    let new_eccc_date = config.last_checked_eccc.or(filtered_papers
+        .next()
+        .or(config.last_checked_arxiv);
+    let new_eccc_date = filtered_papers
         .iter()
         .filter(|p| p.source == Source::ECCC)
         .map(|p| p.published)
-        .next());
+        .next()
+        .or(config.last_checked_eccc);
     let filter_date = config.last_checked_arxiv.unwrap();
     config.last_checked_arxiv = new_arxiv_date;
     config.last_checked_eccc = new_eccc_date;
@@ -165,6 +166,7 @@ fn run() -> Result<()> {
                 console::Emoji(&OK_EMOJI.to_string(), ""),
                 console::Emoji(&OK_EMOJI.to_string(), "")
             );
+            println!("Config: {:?}", &config);
             return config.write();
         }
 

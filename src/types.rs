@@ -1,3 +1,4 @@
+use crate::config::Config;
 use anyhow::Result;
 use chrono::Datelike;
 use chrono::Duration;
@@ -11,10 +12,6 @@ use itertools::Itertools;
 use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::RwLock;
-
-use crate::config::Config;
 
 pub(crate) fn get_config_dir() -> Result<std::path::PathBuf> {
     ProjectDirs::from("com", "narfinger", "TheoryGrabber")
@@ -126,17 +123,6 @@ pub(crate) struct DownloadedPaper<'a> {
     pub(crate) paper: &'a Paper,
     /// The path where we stored the pdf file
     pub(crate) path: PathBuf,
-}
-
-/// Helper function to print authors.
-pub(crate) fn print_authors(paper: &Paper) -> String {
-    //if let Some(x) = paper.authors.first() {
-    let mut iterator = paper.authors.iter();
-    let first = iterator.next().unwrap();
-    iterator.fold(first.to_string(), |acc, x| acc + " and " + x)
-    //} else {
-    //    "".to_string()
-    //}
 }
 
 #[test]
@@ -302,14 +288,6 @@ pub(crate) fn remove_downloaded(paper: &mut Vec<Paper>, c: &Config) {
         let base_path = PathBuf::from(d);
         paper.retain(|p| !base_path.join(p.filename()).exists());
     }
-}
-
-/// Column Type for the cursive view.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum BasicColumn {
-    Title,
-    Source,
-    Published,
 }
 
 pub(crate) fn sanitize_title(title: &str) -> String {

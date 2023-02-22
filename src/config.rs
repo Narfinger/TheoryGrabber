@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 
 /// Struct representing a configuration.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Config {
     /// The Utc time when we last checked for new papers.
     last_checked: chrono::DateTime<chrono::Utc>,
@@ -63,11 +63,4 @@ impl Config {
 
 pub(crate) fn read_directory_id() -> Option<String> {
     Config::read().ok().and_then(|c| c.directory_id)
-}
-
-pub(crate) fn write_directory_id_and_now(id: String) -> Result<()> {
-    let mut c = Config::read_or_default();
-    c.directory_id = Some(id);
-    c.last_checked = chrono::Utc::now();
-    c.write()
 }
