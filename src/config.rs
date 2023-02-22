@@ -30,7 +30,7 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn write(&self) -> Result<()> {
+    pub(crate) fn write(&self) -> Result<()> {
         let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
         if !path.exists() {
@@ -47,7 +47,7 @@ impl Config {
             .context("Cannot write")
     }
 
-    pub fn read() -> Result<Config> {
+    pub(crate) fn read() -> Result<Config> {
         let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
         let mut file = File::open(path)?;
@@ -61,11 +61,11 @@ impl Config {
     }
 }
 
-pub fn read_directory_id() -> Option<String> {
+pub(crate) fn read_directory_id() -> Option<String> {
     Config::read().ok().and_then(|c| c.directory_id)
 }
 
-pub fn write_directory_id_and_now(id: String) -> Result<()> {
+pub(crate) fn write_directory_id_and_now(id: String) -> Result<()> {
     let mut c = Config::read_or_default();
     c.directory_id = Some(id);
     c.last_checked = chrono::Utc::now();
