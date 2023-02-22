@@ -1662,7 +1662,7 @@ dependencies = [
 
 [[package]]
 name = "theory_grabber"
-version = "2.0.9"
+version = "2.0.10"
 dependencies = [
  "anyhow",
  "chrono",

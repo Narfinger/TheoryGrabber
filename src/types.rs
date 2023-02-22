@@ -297,8 +297,8 @@ pub(crate) fn dedup_papers(paper: &mut Vec<Paper>) {
 }
 
 /// do not show paper we already downloaded
-pub(crate) fn remove_downloaded(paper: &mut Vec<Paper>, c: &Arc<RwLock<Config>>) {
-    if let Some(ref d) = c.read().unwrap().local_store {
+pub(crate) fn remove_downloaded(paper: &mut Vec<Paper>, c: &Config) {
+    if let Some(ref d) = c.local_store {
         let base_path = PathBuf::from(d);
         paper.retain(|p| !base_path.join(p.filename()).exists());
     }
