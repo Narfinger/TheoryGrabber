@@ -174,7 +174,7 @@ fn run() -> Result<()> {
     config.write().unwrap().last_checked_arxiv = new_arxiv_date;
     config.write().unwrap().last_checked_eccc = new_eccc_date;
 
-    if let Ok(papers_to_download) = gui::get_selected_papers(
+    if let Ok(Some(papers_to_download)) = gui::get_selected_papers(
         filtered_papers,
         config.read().unwrap().last_checked_arxiv.unwrap(),
     ) {

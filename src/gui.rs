@@ -197,11 +197,12 @@ fn input_handle(
     }
 }
 
-/// Start point for the gui. Runs it in a loop and returns the paper we want to download or an empty list
+/// Start point for the gui. Runs it in a loop and returns the paper we want to download
+/// Return None if we should not save
 pub(crate) fn get_selected_papers(
     papers: Vec<Paper>,
     filter_date: DateTime<Utc>,
-) -> Result<Vec<Paper>, io::Error> {
+) -> Result<Option<Vec<Paper>>, io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -230,8 +231,8 @@ pub(crate) fn get_selected_papers(
     terminal.show_cursor()?;
 
     if should_we_save {
-        Ok(papers)
+        Ok(Some(papers))
     } else {
-        Ok(vec![])
+        Ok(None)
     }
 }
