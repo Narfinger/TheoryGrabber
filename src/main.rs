@@ -143,16 +143,17 @@ fn run() -> Result<()> {
     }
 
     let is_filtered_empty = filtered_papers.is_empty();
+    // we need to get the first one as it is in descending order
     let new_arxiv_date = config.last_checked_arxiv.or(filtered_papers
         .iter()
         .filter(|p| p.source == Source::Arxiv)
         .map(|p| p.published)
-        .last());
+        .next());
     let new_eccc_date = config.last_checked_eccc.or(filtered_papers
         .iter()
         .filter(|p| p.source == Source::ECCC)
         .map(|p| p.published)
-        .last());
+        .next());
     let filter_date = config.last_checked_arxiv.unwrap();
     config.last_checked_arxiv = new_arxiv_date;
     config.last_checked_eccc = new_eccc_date;
