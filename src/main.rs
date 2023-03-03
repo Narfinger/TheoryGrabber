@@ -135,13 +135,13 @@ fn setup() -> Result<String> {
 
 fn run() -> Result<()> {
     let mut config = config::Config::read_or_default();
-    let filtered_papers = get_and_filter_papers(&config)?;
-
+    let mut filtered_papers = get_and_filter_papers(&config)?;
     if filtered_papers.is_empty() {
         println!("Nothing new found. Saving new date.");
     }
 
     let is_filtered_empty = filtered_papers.is_empty();
+    filtered_papers.sort_unstable_by(|a, b| b.cmp(a));
     // we need to get the first one as it is in descending order
     let new_arxiv_date = filtered_papers
         .iter()

@@ -6,8 +6,6 @@ use std::io::{Read, Write};
 /// Struct representing a configuration.
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Config {
-    /// The Utc time when we last checked for new papers.
-    last_checked: chrono::DateTime<chrono::Utc>,
     /// the google drive directory id.
     pub(crate) directory_id: Option<String>,
     /// ECCC time
@@ -20,7 +18,6 @@ pub(crate) struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            last_checked: chrono::Utc::now(),
             directory_id: None,
             last_checked_arxiv: Some(chrono::Utc::now()),
             last_checked_eccc: Some(chrono::Utc::now()),
