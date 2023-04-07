@@ -197,42 +197,52 @@ fn input_handle(
     }
 }
 
+pub(crate) enum SelectedPapers {
+    NoNew,
+    Selected(Vec<Paper>),
+    Abort,
+}
+
 /// Start point for the gui. Runs it in a loop and returns the paper we want to download
 /// Return None if we should not save
 pub(crate) fn get_selected_papers(
     papers: Vec<Paper>,
     filter_date: DateTime<Utc>,
-) -> Result<Option<Vec<Paper>>, io::Error> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    let mut papers = papers;
-    papers.sort_unstable_by(|a, b| b.cmp(a));
-    let mut state = TableState::default();
-    state.select(Some(papers.len() - 1));
-    let mut run = true;
-    let mut should_we_save = false;
-    while run {
-        terminal.draw(|f| {
-            render(&papers, f, &mut state, filter_date);
-            input_handle(&mut papers, &mut run, &mut should_we_save, &mut state);
-        })?;
-    }
-    // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        EnterAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
-    if should_we_save {
-        Ok(Some(papers))
+) -> Result<SelectedPapers, io::Error> {
+    if papers.is_empty() {
+        Ok(SelectedPapers::NoNew)
     } else {
-        Ok(None)
+        enable_raw_mode()?;
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+
+        let mut papers = papers;
+        papers.sort_unstable_by(|a, b| b.cmp(a));
+        let mut state = TableState::default();
+        state.select(Some(papers.len() - 1));
+        let mut run = true;
+        let mut should_we_save = false;
+        while run {
+            terminal.draw(|f| {
+                render(&papers, f, &mut state, filter_date);
+                input_handle(&mut papers, &mut run, &mut should_we_save, &mut state);
+            })?;
+        }
+        // restore terminal
+        disable_raw_mode()?;
+        execute!(
+            terminal.backend_mut(),
+            EnterAlternateScreen,
+            DisableMouseCapture
+        )?;
+        terminal.show_cursor()?;
+
+        if should_we_save {
+            Ok(SelectedPapers::Selected(papers))
+        } else {
+            Ok(SelectedPapers::Abort)
+        }
     }
 }

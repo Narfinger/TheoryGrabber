@@ -11,6 +11,7 @@ pub mod types;
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
 use clap::Parser;
+use gui::SelectedPapers;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::info;
 use std::fs::File;
@@ -136,11 +137,7 @@ fn setup() -> Result<String> {
 fn run() -> Result<()> {
     let mut config = config::Config::read_or_default();
     let mut filtered_papers = get_and_filter_papers(&config)?;
-    if filtered_papers.is_empty() {
-        println!("Nothing new found. Saving new date.");
-    }
 
-    let is_filtered_empty = filtered_papers.is_empty();
     filtered_papers.sort_unstable_by(|a, b| b.cmp(a));
     // we need to get the first one as it is in descending order
     let new_arxiv_date = filtered_papers
@@ -159,25 +156,33 @@ fn run() -> Result<()> {
     config.last_checked_arxiv = new_arxiv_date;
     config.last_checked_eccc = new_eccc_date;
 
-    if let Ok(Some(papers_to_download)) = gui::get_selected_papers(filtered_papers, filter_date) {
-        if papers_to_download.is_empty() && !is_filtered_empty {
+    match gui::get_selected_papers(filtered_papers, filter_date)? {
+        SelectedPapers::Abort => {
+            println!(
+                "Nothing to download ({}) and we are not saving ({}).",
+                console::Emoji(&NOT_OK_EMOJI.to_string(), "X"),
+                console::Emoji(&NOT_OK_EMOJI.to_string(), "X")
+            );
+            Ok(())
+        }
+        SelectedPapers::NoNew => {
             println!(
                 "No papers to download ({}) we are saving ({})",
                 console::Emoji(&OK_EMOJI.to_string(), ""),
                 console::Emoji(&OK_EMOJI.to_string(), "")
             );
             println!("Config: {:?}", &config);
-            return config.write();
+            config.write()
         }
-
-        if let Ok(dir) = TempDir::new() {
-            let files = download_papers(&papers_to_download, &dir).context("Files error")?;
+        SelectedPapers::Selected(papers) => {
+            let dir = TempDir::new()?;
+            let files = download_papers(&papers, &dir).context("Files error")?;
 
             let progressbar = ProgressBar::new(files.len() as u64);
             progressbar.set_message("Uploading Papers");
             progressbar.set_style(ProgressStyle::default_bar()
-                                  .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")?
-                                  .progress_chars("#>-"));
+                                      .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")?
+                                      .progress_chars("#>-"));
             progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
 
             for i in progressbar.wrap_iter(files.iter()) {
@@ -186,16 +191,9 @@ fn run() -> Result<()> {
                     .context("Uploading function has error")?;
             }
             progressbar.finish();
-            return config.write();
+            config.write()
         }
-    } else {
-        println!(
-            "Nothing to download ({}) and we are not saving ({}).",
-            console::Emoji(&NOT_OK_EMOJI.to_string(), "X"),
-            console::Emoji(&NOT_OK_EMOJI.to_string(), "X")
-        );
     }
-    Ok(())
 }
 
 ///Grabs papers from arxiv and eccc and puts them into a local directory
