@@ -7,10 +7,10 @@ use quick_xml::Reader;
 use std::io::Read;
 use url::Url;
 
-static ARXIV: &str = "https://export.arxiv.org/api/query?search_query=cat:cs.CC&sortBy=lastUpdatedDate&sortOrder=descending&max_results=100";
+static ARXIV: &str = "https://export.arxiv.org/api/query?sortBy=lastUpdatedDate&sortOrder=descending&max_results=100&search_query=cat:";
+static CATEGORIES: [&str; 2] = ["cs.CC", "cs.DS"];
 
-/// Parses the Arxiv xml and gives the last 100 papers.
-pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
+fn parse_url(s: &str) -> Result<Vec<Paper>> {
     enum Tag {
         Entry,
         Published,
@@ -32,7 +32,7 @@ pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
     let client = reqwest::blocking::Client::builder()
         .user_agent("TheoryGrabber")
         .build()?;
-    let mut reqreader = client.get(ARXIV).send()?;
+    let mut reqreader = client.get(s).send()?;
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp)?;
 
@@ -155,6 +155,17 @@ pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
             }
         })
         .collect::<Vec<Paper>>())
+}
+
+/// Parses the Arxiv xml and gives the last 100 papers.
+pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
+    let mut papers = Vec::new();
+    for i in CATEGORIES {
+        let s = String::from(ARXIV) + i;
+        let mut val = parse_url(&s)?;
+        papers.append(&mut val);
+    }
+    Ok(papers)
 }
 #[test]
 fn get_arxiv_papers_test() {
