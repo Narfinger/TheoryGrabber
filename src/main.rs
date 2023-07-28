@@ -142,7 +142,7 @@ fn run() -> Result<()> {
     // we need to get the first one as it is in descending order
     let new_arxiv_date = filtered_papers
         .iter()
-        .filter(|p| p.source == Source::Arxiv)
+        .filter(|p| p.source.is_arxiv())
         .map(|p| p.published)
         .next()
         .or(config.last_checked_arxiv);

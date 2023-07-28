@@ -19,7 +19,7 @@ use std::time::Duration;
 use tui::widgets::{Block, Borders};
 
 /// How should we style a paper in a table? Returns a row.
-fn render_paper<B: Backend>(p: &Paper) -> Row {
+fn render_paper(p: &Paper) -> Row {
     Row::new(vec![
         Span::styled(p.title.clone(), Style::default().fg(Color::Green)),
         Span::styled(p.format_author(), Style::default().fg(Color::Blue)),
@@ -116,10 +116,7 @@ fn render<B: Backend>(
 
     render_help(&main_layout, f, filter_date);
 
-    let items = papers
-        .iter()
-        .map(|p: &Paper| render_paper::<B>(p))
-        .collect::<Vec<Row>>();
+    let items = papers.iter().map(render_paper).collect::<Vec<Row>>();
     let table = Table::new(items)
         //.style(Style::default().fg(Color::Blue))
         .block(Block::default().title("Papers").borders(Borders::ALL))

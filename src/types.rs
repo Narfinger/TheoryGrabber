@@ -23,16 +23,22 @@ pub(crate) fn get_config_dir() -> Result<std::path::PathBuf> {
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub(crate) enum Source {
     /// The Source is ArXiV.org.
-    Arxiv,
+    Arxiv(String),
     /// The source is ECCC (Electronic Colloqium on Complexity).
     ECCC,
 }
 
+impl Source {
+    pub(crate) fn is_arxiv(&self) -> bool {
+        matches!(self, Source::Arxiv(_))
+    }
+}
+
 impl fmt::Display for Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let out = match *self {
-            Source::Arxiv => "ArXiV",
-            Source::ECCC => "ECCC",
+        let out = match self {
+            Source::Arxiv(s) => format!("ArXiV({})", &s),
+            Source::ECCC => String::from("ECCC"),
         };
 
         write!(f, "{out}")
@@ -145,7 +151,7 @@ fn filter_test() {
         link: exurl.clone(),
         published: Utc::now(),
         authors: vec![String::from("Author2"), String::from("Author1")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
     let p3 = Paper {
         title: String::from("Test3"),
@@ -153,7 +159,7 @@ fn filter_test() {
         link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
 
     let vec = vec![p1, p2.clone(), p3.clone()];
@@ -169,7 +175,7 @@ fn filter_test() {
 fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
     match p.source {
         Source::ECCC => p.published >= date,
-        Source::Arxiv => {
+        Source::Arxiv(_) => {
             let mut perhaps_date: chrono::DateTime<chrono::Utc> = date
                 .with_timezone(&New_York)
                 .with_hour(14)
@@ -220,7 +226,7 @@ fn fuzzy_exists_test() {
         link: exurl.clone(),
         published: Utc::now(),
         authors: vec![String::from("Author2"), String::from("Author1")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
     let p2 = Paper {
         title: String::from("Test1 t"),
@@ -228,7 +234,7 @@ fn fuzzy_exists_test() {
         link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
 
     let vec = vec![p1.clone(), p1eq.clone(), p2.clone()];
@@ -240,7 +246,7 @@ fn fuzzy_exists_test() {
 /// If 'p' is an Arxiv version, test if there exists an ECCC version with the same title.
 fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
     v.iter()
-        .any(|q| p.source == Source::Arxiv && q.source == Source::ECCC && p.title == q.title)
+        .any(|q| p.source.is_arxiv() && q.source == Source::ECCC && p.title == q.title)
 }
 
 #[test]
@@ -260,7 +266,7 @@ fn dedup_test() {
         link: exurl.clone(),
         published: Utc::now(),
         authors: vec![String::from("Author2"), String::from("Author1")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
     let p2 = Paper {
         title: String::from("Test1 t"),
@@ -268,7 +274,7 @@ fn dedup_test() {
         link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
-        source: Source::Arxiv,
+        source: Source::Arxiv(String::from("")),
     };
 
     let mut v = vec![p1.clone(), p1eq, p2.clone()];

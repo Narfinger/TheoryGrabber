@@ -7,10 +7,15 @@ use quick_xml::Reader;
 use std::io::Read;
 use url::Url;
 
-static ARXIV: &str = "https://export.arxiv.org/api/query?sortBy=lastUpdatedDate&sortOrder=descending&max_results=100&search_query=cat:";
-static CATEGORIES: [&str; 2] = ["cs.CC", "cs.DS"];
+static QUERIES: [(&str, &str); 3] = [
+    ("sortBy", "lastUpdatedDate"),
+    ("sortOrder", "descending"),
+    ("max_results", "100"),
+];
+static ARXIV_URL: &str = "https://export.arxiv.org/api/query";
+static CATEGORIES: [&str; 2] = ["cat:cs.CC", "cat:cs.DS"];
 
-fn parse_url(s: &str) -> Result<Vec<Paper>> {
+fn parse_url(query: &[(&str, &str)], arxiv_cat: String) -> Result<Vec<Paper>> {
     enum Tag {
         Entry,
         Published,
@@ -32,7 +37,7 @@ fn parse_url(s: &str) -> Result<Vec<Paper>> {
     let client = reqwest::blocking::Client::builder()
         .user_agent("TheoryGrabber")
         .build()?;
-    let mut reqreader = client.get(s).send()?;
+    let mut reqreader = client.get(ARXIV_URL).query(query).send()?;
     let mut resp = String::new();
     reqreader.read_to_string(&mut resp)?;
 
@@ -150,7 +155,7 @@ fn parse_url(s: &str) -> Result<Vec<Paper>> {
                     .unwrap()
                     .with_timezone(&chrono::Utc),
                 link: reqwest::Url::parse(&p.link.unwrap()).unwrap(),
-                source: Source::Arxiv,
+                source: Source::Arxiv(arxiv_cat.clone()),
                 authors: p.authors,
             }
         })
@@ -161,8 +166,9 @@ fn parse_url(s: &str) -> Result<Vec<Paper>> {
 pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
     let mut papers = Vec::new();
     for i in CATEGORIES {
-        let s = String::from(ARXIV) + i;
-        let mut val = parse_url(&s)?;
+        let mut query = Vec::from(QUERIES);
+        query.push(("search_query", i));
+        let mut val = parse_url(&query, String::from(i))?;
         papers.append(&mut val);
     }
     Ok(papers)
