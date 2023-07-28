@@ -13,7 +13,7 @@ static QUERIES: [(&str, &str); 3] = [
     ("max_results", "100"),
 ];
 static ARXIV_URL: &str = "https://export.arxiv.org/api/query";
-static CATEGORIES: [&str; 2] = ["cat:cs.CC", "cat:cs.DS"];
+static CATEGORIES: [&str; 2] = ["cs.CC", "cs.DS"];
 
 fn parse_url(query: &[(&str, &str)], arxiv_cat: String) -> Result<Vec<Paper>> {
     enum Tag {
@@ -167,7 +167,8 @@ pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
     let mut papers = Vec::new();
     for i in CATEGORIES {
         let mut query = Vec::from(QUERIES);
-        query.push(("search_query", i));
+        let cat_name = String::from("cat:") + i;
+        query.push(("search_query", &cat_name));
         let mut val = parse_url(&query, String::from(i))?;
         papers.append(&mut val);
     }

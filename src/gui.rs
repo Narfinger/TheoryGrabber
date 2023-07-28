@@ -127,7 +127,7 @@ fn render<B: Backend>(
         .widths(&[
             Constraint::Length(60),
             Constraint::Length(20),
-            Constraint::Length(5),
+            Constraint::Length(15),
             Constraint::Length(15),
         ])
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
