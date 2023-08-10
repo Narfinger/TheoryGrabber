@@ -128,7 +128,7 @@ fn render<B: Backend>(
             Constraint::Length(60),
             Constraint::Length(20),
             Constraint::Length(15),
-            Constraint::Length(15),
+            Constraint::Length(20),
         ])
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">>");

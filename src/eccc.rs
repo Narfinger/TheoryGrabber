@@ -258,10 +258,17 @@ fn extract_authors(authors_raw: &str) -> Vec<String> {
         .enumerate();
     let (even, odd): EnumeratedVec = enumerated_strings.partition(|&(x, _)| x % 2 == 0);
 
-    even.into_iter()
+    let mut authors = even
+        .into_iter()
         .zip(odd)
         .map(|((_, x), (_, y))| x + " " + &y)
-        .collect::<Vec<String>>()
+        .collect::<Vec<String>>();
+
+    // the authors have for some reason a comma after it
+    for i in authors.iter_mut() {
+        i.pop();
+    }
+    authors
 }
 
 /// This extracts the id and rough date from the `id_date_raw` string.
