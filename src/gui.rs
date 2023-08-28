@@ -46,7 +46,8 @@ fn render_details<B: Backend>(
                 [
                     Constraint::Percentage(5),
                     Constraint::Percentage(5),
-                    Constraint::Percentage(90),
+                    Constraint::Percentage(5),
+                    Constraint::Percentage(85),
                 ]
                 .as_ref(),
             )
@@ -62,6 +63,11 @@ fn render_details<B: Backend>(
             let p = Paragraph::new(display).wrap(Wrap { trim: false });
             f.render_widget(p, details_layout[1]);
         }
+        {
+            let display = Text::from(paper.source.to_string());
+            let p = Paragraph::new(display).wrap(Wrap { trim: false });
+            f.render_widget(p, details_layout[2]);
+        }
 
         let p_abstract_text = Text::from(paper.description.clone());
 
@@ -73,7 +79,7 @@ fn render_details<B: Backend>(
                     .borders(Borders::ALL)
                     .border_type(BorderType::Double),
             );
-        f.render_widget(p_abstract_para, details_layout[2])
+        f.render_widget(p_abstract_para, details_layout[3])
     }
 }
 
