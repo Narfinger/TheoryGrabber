@@ -194,6 +194,10 @@ fn input_handle(
                         }
                     }
                 }
+                KeyCode::PageUp => {
+                    state.select(Some(0));
+                }
+                KeyCode::PageDown => state.select(Some(papers.len() - 1)),
                 _ => {}
             }
         }
