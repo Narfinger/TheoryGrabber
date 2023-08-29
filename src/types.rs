@@ -226,7 +226,7 @@ fn fuzzy_exists_test() {
         link: exurl.clone(),
         published: Utc::now(),
         authors: vec![String::from("Author2"), String::from("Author1")],
-        source: Source::Arxiv(String::from("")),
+        source: Source::Arxiv(String::from("A")),
     };
     let p2 = Paper {
         title: String::from("Test1 t"),
@@ -234,7 +234,7 @@ fn fuzzy_exists_test() {
         link: exurl,
         published: Utc::now(),
         authors: vec![String::from("Author3"), String::from("Author2")],
-        source: Source::Arxiv(String::from("")),
+        source: Source::Arxiv(String::from("B")),
     };
 
     let vec = vec![p1.clone(), p1eq.clone(), p2.clone()];
@@ -244,15 +244,14 @@ fn fuzzy_exists_test() {
 }
 
 /// If 'p' is an Arxiv version, test if there exists an ECCC version with the same title.
+/// Remember that this is symmetric
 fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
-    v.iter().any(|q| {
-        (p.source.is_arxiv() && q.source == Source::ECCC && p.title == q.title)
-            | (p.source.is_arxiv() && q.source.is_arxiv() && p.title == q.title)
-    })
+    v.iter()
+        .any(|q| (p.source.is_arxiv() && q.source == Source::ECCC && p.title == q.title))
 }
 
 #[test]
-fn dedup_test() {
+fn dedup_test1() {
     let exurl = reqwest::Url::parse("https://www.example.com").unwrap();
     let p1 = Paper {
         title: String::from("Test1"),
@@ -268,7 +267,7 @@ fn dedup_test() {
         link: exurl.clone(),
         published: Utc::now(),
         authors: vec![String::from("Author2"), String::from("Author1")],
-        source: Source::Arxiv(String::from("")),
+        source: Source::Arxiv(String::from("A")),
     };
     let p2 = Paper {
         title: String::from("Test1 t"),
@@ -280,14 +279,79 @@ fn dedup_test() {
     };
 
     let mut v = vec![p1.clone(), p1eq, p2.clone()];
-    dedup_papers(&mut v);
+    v = dedup_papers(v);
     assert_eq!(vec![p1, p2], v);
 }
 
+#[test]
+fn dedup_test2() {
+    let exurl = reqwest::Url::parse("https://www.example.com").unwrap();
+    let p1 = Paper {
+        title: String::from("Test1"),
+        description: String::from("a"),
+        link: exurl.clone(),
+        published: Utc::now(),
+        authors: vec![String::from("Author1"), String::from("Author2")],
+        source: Source::ECCC,
+    };
+    let p2eq = Paper {
+        title: String::from("Test2"),
+        description: String::from("b"),
+        link: exurl.clone(),
+        published: Utc::now(),
+        authors: vec![String::from("Author2"), String::from("Author1")],
+        source: Source::Arxiv(String::from("A")),
+    };
+    let p2 = Paper {
+        title: String::from("Test2"),
+        description: String::from("c"),
+        link: exurl,
+        published: Utc::now(),
+        authors: vec![String::from("Author3"), String::from("Author2")],
+        source: Source::Arxiv(String::from("B")),
+    };
+
+    let mut v = vec![p1.clone(), p2eq.clone(), p2.clone()];
+    v = dedup_papers(v);
+    assert_eq!(vec![p1, p2eq], v);
+}
+
+#[test]
+fn dedup_test3() {
+    let exurl = reqwest::Url::parse("https://www.example.com").unwrap();
+    let p1 = Paper {
+        title: String::from("Test1"),
+        description: String::from("a"),
+        link: exurl.clone(),
+        published: Utc::now(),
+        authors: vec![String::from("Author1"), String::from("Author2")],
+        source: Source::ECCC,
+    };
+    let p2eq = Paper {
+        title: String::from("Test1"),
+        description: String::from("b"),
+        link: exurl.clone(),
+        published: Utc::now(),
+        authors: vec![String::from("Author2"), String::from("Author1")],
+        source: Source::Arxiv(String::from("A")),
+    };
+    let p2 = Paper {
+        title: String::from("Test1"),
+        description: String::from("c"),
+        link: exurl,
+        published: Utc::now(),
+        authors: vec![String::from("Author3"), String::from("Author2")],
+        source: Source::Arxiv(String::from("B")),
+    };
+
+    let mut v = vec![p1.clone(), p2eq.clone(), p2.clone()];
+    v = dedup_papers(v);
+    assert_eq!(vec![p1], v);
+}
+
 /// Remove papers that are doubled in the vector and keep the ECCC version. The test cases are probably the best example.
-pub(crate) fn dedup_papers(paper: &mut Vec<Paper>) {
-    let v = paper.clone();
-    paper.retain(|q| !fuzzy_exists_equal_different_source(&v, q));
+pub(crate) fn dedup_papers(papers: Vec<Paper>) -> Vec<Paper> {
+    papers.into_iter().unique_by(|p| p.title.clone()).collect()
 }
 
 /// do not show paper we already downloaded

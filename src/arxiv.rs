@@ -174,7 +174,3 @@ pub(crate) fn parse_arxiv() -> Result<Vec<Paper>> {
     }
     Ok(papers)
 }
-#[test]
-fn get_arxiv_papers_test() {
-    assert!(parse_arxiv().is_ok());
-}

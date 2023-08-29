@@ -114,7 +114,7 @@ fn get_and_filter_papers(config: &config::Config) -> Result<Vec<Paper>> {
     //info!("Filtered papers: {:?}", &papers_filtered);
     progress_fetch_bar.set_message("Sorting and Deduping");
     papers.sort_unstable();
-    types::dedup_papers(&mut papers);
+    papers = types::dedup_papers(papers);
     types::remove_downloaded(&mut papers, config);
 
     progress_fetch_bar.finish_with_message("Done fetching");
