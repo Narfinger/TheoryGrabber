@@ -160,24 +160,38 @@ fn handle_papers(papers: &[Paper], config: &Config) -> Result<()> {
     Ok(())
 }
 
+struct NewDate {
+    eccc: Option<chrono::DateTime<chrono::Utc>>,
+    arxiv: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+fn get_latest_dates(papers: &[Paper]) -> NewDate {
+    let new_arxiv_date = papers
+        .iter()
+        .filter(|p| p.source.is_arxiv())
+        .map(|p| p.published)
+        .next();
+    let new_eccc_date = papers
+        .iter()
+        .filter(|p| p.source == Source::ECCC)
+        .map(|p| p.published)
+        .next();
+
+    NewDate {
+        eccc: new_eccc_date,
+        arxiv: new_arxiv_date,
+    }
+}
+
 fn run() -> Result<()> {
     let mut config = config::Config::read_or_default();
     let mut filtered_papers = get_and_filter_papers(&config)?;
 
     filtered_papers.sort_unstable_by(|a, b| b.cmp(a));
     // we need to get the first one as it is in descending order
-    let new_arxiv_date = filtered_papers
-        .iter()
-        .filter(|p| p.source.is_arxiv())
-        .map(|p| p.published)
-        .next()
-        .or(config.last_checked_arxiv);
-    let new_eccc_date = filtered_papers
-        .iter()
-        .filter(|p| p.source == Source::ECCC)
-        .map(|p| p.published)
-        .next()
-        .or(config.last_checked_eccc);
+    let new_dates = get_latest_dates(&filtered_papers);
+    let new_arxiv_date = new_dates.arxiv.or(config.last_checked_arxiv);
+    let new_eccc_date = new_dates.eccc.or(config.last_checked_eccc);
     let filter_date = config.last_checked_arxiv.unwrap();
     config.last_checked_arxiv = new_arxiv_date;
     config.last_checked_eccc = new_eccc_date;
@@ -208,17 +222,12 @@ fn run() -> Result<()> {
         SelectedPapers::SelectedAndSavedAt(papers) => {
             handle_papers(&papers, &config)?;
             // now we need to modify the date
-            let date = papers
-                .first()
-                .unwrap()
-                .published
-                .checked_sub_days(chrono::Days::new(1))
-                .unwrap();
-            if config.last_checked_arxiv.unwrap() <= date {
-                config.last_checked_arxiv = Some(date);
+            let new = get_latest_dates(&papers);
+            if config.last_checked_arxiv.unwrap() <= new.arxiv.unwrap_or_default() {
+                config.last_checked_arxiv = new.arxiv;
             }
-            if config.last_checked_eccc.unwrap() <= date {
-                config.last_checked_eccc = Some(date);
+            if config.last_checked_eccc.unwrap() <= new.eccc.unwrap_or_default() {
+                config.last_checked_eccc = new.eccc;
             }
             config.write()
         }
