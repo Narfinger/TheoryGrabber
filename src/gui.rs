@@ -83,6 +83,7 @@ fn render_details<B: Backend>(
     }
 }
 
+/// renders the help box
 fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: DateTime<Utc>) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
@@ -94,6 +95,7 @@ fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: 
         ListItem::new("Use d or Delete, to remove them from download"),
         ListItem::new("Press Enter to Download"),
         ListItem::new("Use Esc or q to quit and not save the current state"),
+        ListItem::new("Use x to save the selected date up to current selected item"),
     ]);
     f.render_widget(help, layout[0]);
 
@@ -148,11 +150,21 @@ fn render<B: Backend>(
     render_details(state, papers, &p_abstract_layout, f);
 }
 
+/// Will be used by the input handle to say which way we should save the papers
+enum SavingType {
+    /// Do not save the papers
+    DoNotSave,
+    /// Save all remaining papers
+    Save,
+    /// Save all remaining papers up to index
+    SaveNewDate(usize),
+}
+
 /// Handles the input
 fn input_handle(
     papers: &mut Vec<Paper>,
     run: &mut bool,
-    should_we_save: &mut bool,
+    saving_type: &mut SavingType,
     state: &mut TableState,
 ) {
     if event::poll(Duration::from_millis(100)).unwrap_or(false) {
@@ -160,11 +172,19 @@ fn input_handle(
             match key.code {
                 KeyCode::Esc | KeyCode::Char('q') => {
                     *run = false;
-                    *should_we_save = false;
+                    *saving_type = SavingType::DoNotSave;
                 }
                 KeyCode::Enter => {
                     *run = false;
-                    *should_we_save = true;
+                    *saving_type = SavingType::Save;
+                }
+                KeyCode::Char('x') => {
+                    *run = false;
+                    if let Some(i) = state.selected() {
+                        *saving_type = SavingType::SaveNewDate(i);
+                    } else {
+                        *saving_type = SavingType::DoNotSave;
+                    }
                 }
                 KeyCode::Down => {
                     let selected = state.selected().unwrap_or(0);
@@ -204,9 +224,15 @@ fn input_handle(
     }
 }
 
+/// Return type for papers that we selected in the gui
 pub(crate) enum SelectedPapers {
+    /// There are no new papers
     NoNew,
+    /// We have some selected papers
     Selected(Vec<Paper>),
+    /// We stopped looking at papers somewhere in the middle and want to save the last date
+    SelectedAndSavedAt(Vec<Paper>),
+    /// Do not save anything
     Abort,
 }
 
@@ -230,11 +256,11 @@ pub(crate) fn get_selected_papers(
         let mut state = TableState::default();
         state.select(Some(papers.len() - 1));
         let mut run = true;
-        let mut should_we_save = false;
+        let mut saving_type = SavingType::DoNotSave;
         while run {
             terminal.draw(|f| {
                 render(&papers, f, &mut state, filter_date);
-                input_handle(&mut papers, &mut run, &mut should_we_save, &mut state);
+                input_handle(&mut papers, &mut run, &mut saving_type, &mut state);
             })?;
         }
         // restore terminal
@@ -246,10 +272,13 @@ pub(crate) fn get_selected_papers(
         )?;
         terminal.show_cursor()?;
 
-        if should_we_save {
-            Ok(SelectedPapers::Selected(papers))
-        } else {
-            Ok(SelectedPapers::Abort)
+        match saving_type {
+            SavingType::DoNotSave => Ok(SelectedPapers::Abort),
+            SavingType::Save => Ok(SelectedPapers::Selected(papers)),
+            SavingType::SaveNewDate(i) => {
+                let (_, snd) = papers.split_at(i);
+                Ok(SelectedPapers::SelectedAndSavedAt(snd.into()))
+            }
         }
     }
 }

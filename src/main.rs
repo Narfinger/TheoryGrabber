@@ -11,6 +11,7 @@ pub mod types;
 use crate::types::{DownloadedPaper, Paper};
 use anyhow::{Context, Result};
 use clap::Parser;
+use config::Config;
 use gui::SelectedPapers;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::info;
@@ -134,6 +135,31 @@ fn setup() -> Result<String> {
     Ok(directory_id)
 }
 
+/// downloads and puts an array of papers into their folders
+fn handle_papers(papers: &[Paper], config: &Config) -> Result<()> {
+    let dir = TempDir::new()?;
+    let files = download_papers(&papers, &dir).context("Files error")?;
+
+    let progressbar = ProgressBar::new(files.len() as u64);
+    progressbar.set_message("Uploading Papers");
+    progressbar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}",
+            )?
+            .progress_chars("#>-"),
+    );
+    progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
+
+    for i in progressbar.wrap_iter(files.iter()) {
+        let f = File::open(i.path.clone()).context("File couldn't be opened")?;
+        drive::upload_file_or_local(f, i.paper, &config.directory_id, &config.local_store)
+            .context("Uploading function has error")?;
+    }
+    progressbar.finish();
+    Ok(())
+}
+
 fn run() -> Result<()> {
     let mut config = config::Config::read_or_default();
     let mut filtered_papers = get_and_filter_papers(&config)?;
@@ -175,22 +201,25 @@ fn run() -> Result<()> {
             config.write()
         }
         SelectedPapers::Selected(papers) => {
-            let dir = TempDir::new()?;
-            let files = download_papers(&papers, &dir).context("Files error")?;
+            handle_papers(&papers, &config)?;
+            config.write()
+        }
 
-            let progressbar = ProgressBar::new(files.len() as u64);
-            progressbar.set_message("Uploading Papers");
-            progressbar.set_style(ProgressStyle::default_bar()
-                                      .template("[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}")?
-                                      .progress_chars("#>-"));
-            progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
-
-            for i in progressbar.wrap_iter(files.iter()) {
-                let f = File::open(i.path.clone()).context("File couldn't be opened")?;
-                drive::upload_file_or_local(f, i.paper, &config.directory_id, &config.local_store)
-                    .context("Uploading function has error")?;
+        SelectedPapers::SelectedAndSavedAt(papers) => {
+            handle_papers(&papers, &config)?;
+            // now we need to modify the date
+            let date = papers
+                .first()
+                .unwrap()
+                .published
+                .checked_sub_days(chrono::Days::new(1))
+                .unwrap();
+            if config.last_checked_arxiv.unwrap() <= date {
+                config.last_checked_arxiv = Some(date);
             }
-            progressbar.finish();
+            if config.last_checked_eccc.unwrap() <= date {
+                config.last_checked_eccc = Some(date);
+            }
             config.write()
         }
     }

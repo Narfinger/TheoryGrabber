@@ -12,6 +12,7 @@ pub(crate) struct Config {
     pub(crate) last_checked_eccc: Option<chrono::DateTime<chrono::Utc>>,
     /// Arxiv time
     pub(crate) last_checked_arxiv: Option<chrono::DateTime<chrono::Utc>>,
+    /// Path where we store the files locally
     pub(crate) local_store: Option<String>,
 }
 
@@ -27,6 +28,7 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Writes the current config to string
     pub(crate) fn write(&self) -> Result<()> {
         let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
@@ -44,6 +46,7 @@ impl Config {
             .context("Cannot write")
     }
 
+    /// Reads the current config
     pub(crate) fn read() -> Result<Config> {
         let mut path = crate::types::get_config_dir()?;
         path.push("config.toml");
@@ -53,6 +56,7 @@ impl Config {
         toml::from_str::<Config>(&s).context("Couldn't parse")
     }
 
+    /// read of make a default Config
     pub fn read_or_default() -> Config {
         Config::read().unwrap_or_else(|_| Config::default())
     }
