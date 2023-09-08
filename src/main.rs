@@ -27,12 +27,13 @@ const NOT_OK_EMOJI: char = '\u{274C}';
 
 /// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
-    println!("We will download the following papers:");
-    for i in papers {
-        println!("{}", i.title);
-    }
+    //println!("We will download the following papers:");
+    //for i in papers {
+    //    println!("{}", i.title);
+    //}
 
     let mut files: Vec<DownloadedPaper> = Vec::new();
+    let mut errored_out: Vec<Paper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
     progressbar.set_message("Downloading Papers");
     progressbar.set_style(
@@ -56,28 +57,30 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
                     .expect("Error in parsing header"),
             )
         {
-            return Err(anyhow!(
-                "We got the wrong content type for {}, type: {:?}",
-                &i.link,
-                contenttype
-            ));
-        }
-        let filename = Path::new("").with_file_name(&i.title).with_extension("pdf");
-        let savefile = dir.path().join(&filename);
-        let mut file = File::create(savefile.clone()).context(anyhow!(
-            "Error in file with filename: {:?}, savefile: {:?}",
-            filename.clone(),
-            savefile.clone()
-        ))?;
-        info!("Downloading {} onto {:?}", &i.title, &savefile);
-        copy(&mut response, &mut file)?;
+            errored_out.push(i.clone());
+        } else {
+            let filename = Path::new("").with_file_name(&i.title).with_extension("pdf");
+            let savefile = dir.path().join(&filename);
+            let mut file = File::create(savefile.clone()).context(anyhow!(
+                "Error in file with filename: {:?}, savefile: {:?}",
+                filename.clone(),
+                savefile.clone()
+            ))?;
+            info!("Downloading {} onto {:?}", &i.title, &savefile);
+            copy(&mut response, &mut file)?;
 
-        files.push(DownloadedPaper {
-            paper: i,
-            path: savefile,
-        });
+            files.push(DownloadedPaper {
+                paper: i,
+                path: savefile,
+            });
+        }
     }
     progressbar.finish();
+
+    println!("\nCould not download the following papers:");
+    for i in errored_out {
+        println!("{}", i.link);
+    }
 
     Ok(files)
 }

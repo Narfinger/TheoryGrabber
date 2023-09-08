@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
 };
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -14,9 +14,9 @@ use tui::{
 };
 
 use crate::types::Paper;
+use ratatui::widgets::{Block, Borders};
 use std::io;
 use std::time::Duration;
-use tui::widgets::{Block, Borders};
 
 /// How should we style a paper in a table? Returns a row.
 fn render_paper(p: &Paper) -> Row {
