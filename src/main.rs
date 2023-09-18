@@ -141,7 +141,7 @@ fn setup() -> Result<String> {
 /// downloads and puts an array of papers into their folders
 fn handle_papers(papers: &[Paper], config: &Config) -> Result<()> {
     let dir = TempDir::new()?;
-    let files = download_papers(&papers, &dir).context("Files error")?;
+    let files = download_papers(papers, &dir).context("Files error")?;
 
     let progressbar = ProgressBar::new(files.len() as u64);
     progressbar.set_message("Uploading Papers");

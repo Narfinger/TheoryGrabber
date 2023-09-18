@@ -18,6 +18,15 @@ use ratatui::widgets::{Block, Borders};
 use std::io;
 use std::time::Duration;
 
+struct GuiState {
+    papers: Vec<Paper>,
+    table_state: TableState,
+    filter_date: DateTime<Utc>,
+    run: bool,
+    saving_type: SavingType,
+    history: Vec<Paper>,
+}
+
 /// How should we style a paper in a table? Returns a row.
 fn render_paper(p: &Paper) -> Row {
     Row::new(vec![
@@ -96,6 +105,7 @@ fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: 
         ListItem::new("Press Enter to Download"),
         ListItem::new("Use Esc or q to quit and not save the current state"),
         ListItem::new("Use x to save the selected date up to current selected item"),
+        ListItem::new("Use u to undo delete"),
     ]);
     f.render_widget(help, layout[0]);
 
@@ -110,21 +120,16 @@ fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: 
 }
 
 /// Main Render
-fn render<B: Backend>(
-    papers: &[Paper],
-    f: &mut Frame<B>,
-    state: &mut TableState,
-    filter_date: DateTime<Utc>,
-) {
+fn render<B: Backend>(state: &mut GuiState, f: &mut Frame<B>) {
     // Create a layout into which to place our blocks.
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
         .split(f.size());
 
-    render_help(&main_layout, f, filter_date);
+    render_help(&main_layout, f, state.filter_date);
 
-    let items = papers.iter().map(render_paper).collect::<Vec<Row>>();
+    let items = state.papers.iter().map(render_paper).collect::<Vec<Row>>();
     let table = Table::new(items)
         //.style(Style::default().fg(Color::Blue))
         .block(Block::default().title("Papers").borders(Borders::ALL))
@@ -145,9 +150,9 @@ fn render<B: Backend>(
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
         .split(main_layout[1]);
-    f.render_stateful_widget(table, p_abstract_layout[0], state);
+    f.render_stateful_widget(table, p_abstract_layout[0], &mut state.table_state);
 
-    render_details(state, papers, &p_abstract_layout, f);
+    render_details(&state.table_state, &state.papers, &p_abstract_layout, f);
 }
 
 /// Will be used by the input handle to say which way we should save the papers
@@ -161,63 +166,65 @@ enum SavingType {
 }
 
 /// Handles the input
-fn input_handle(
-    papers: &mut Vec<Paper>,
-    run: &mut bool,
-    saving_type: &mut SavingType,
-    state: &mut TableState,
-) {
+fn input_handle(state: &mut GuiState) {
     if event::poll(Duration::from_millis(100)).unwrap_or(false) {
         if let Event::Key(key) = event::read().unwrap() {
             match key.code {
                 KeyCode::Esc | KeyCode::Char('q') => {
-                    *run = false;
-                    *saving_type = SavingType::DoNotSave;
+                    state.run = false;
+                    state.saving_type = SavingType::DoNotSave;
                 }
                 KeyCode::Enter => {
-                    *run = false;
-                    *saving_type = SavingType::Save;
+                    state.run = false;
+                    state.saving_type = SavingType::Save;
                 }
                 KeyCode::Char('x') => {
-                    *run = false;
-                    if let Some(i) = state.selected() {
-                        *saving_type = SavingType::SaveNewDate(i);
+                    state.run = false;
+                    if let Some(i) = state.table_state.selected() {
+                        state.saving_type = SavingType::SaveNewDate(i);
                     } else {
-                        *saving_type = SavingType::DoNotSave;
+                        state.saving_type = SavingType::DoNotSave;
                     }
                 }
                 KeyCode::Down => {
-                    let selected = state.selected().unwrap_or(0);
-                    let new_selected = if selected + 1 >= papers.len() {
+                    let selected = state.table_state.selected().unwrap_or(0);
+                    let new_selected = if selected + 1 >= state.papers.len() {
                         selected
                     } else {
                         selected + 1
                     };
 
-                    state.select(Some(new_selected));
+                    state.table_state.select(Some(new_selected));
                 }
                 KeyCode::Up | KeyCode::Char('w') => {
-                    let selected = state.selected().unwrap_or(0);
+                    let selected = state.table_state.selected().unwrap_or(0);
                     let new_selected = selected.saturating_sub(1);
-                    state.select(Some(new_selected));
+                    state.table_state.select(Some(new_selected));
                 }
                 KeyCode::Delete | KeyCode::Char('d') => {
-                    if let Some(i) = state.selected() {
-                        if i < papers.len() {
+                    if let Some(i) = state.table_state.selected() {
+                        if i < state.papers.len() {
                             // sometimes we could delete things despite them being already deleted
-                            papers.remove(i);
-                            let selected = state.selected().unwrap_or(0);
+                            let removed_paper = state.papers.remove(i);
+                            state.history.push(removed_paper);
+
+                            let selected = state.table_state.selected().unwrap_or(0);
                             let new_selected = selected.saturating_sub(1);
-                            state.select(Some(new_selected));
+                            state.table_state.select(Some(new_selected));
                         } else {
-                            state.select(None);
+                            state.table_state.select(None);
                         }
                     }
                 }
                 KeyCode::PageUp => {
-                    state.select(Some(0));
+                    state.table_state.select(Some(0));
                 }
-                KeyCode::PageDown => state.select(Some(papers.len() - 1)),
+                KeyCode::PageDown => state.table_state.select(Some(state.papers.len() - 1)),
+                KeyCode::Char('u') => {
+                    if let Some(paper) = state.history.pop() {
+                        state.papers.push(paper);
+                    }
+                }
                 _ => {}
             }
         }
@@ -253,14 +260,22 @@ pub(crate) fn get_selected_papers(
 
         let mut papers = papers;
         papers.sort_unstable_by(|a, b| b.cmp(a));
-        let mut state = TableState::default();
-        state.select(Some(papers.len() - 1));
-        let mut run = true;
-        let mut saving_type = SavingType::DoNotSave;
-        while run {
+        let mut table_state = TableState::default();
+        table_state.select(Some(papers.len() - 1));
+
+        let mut state = GuiState {
+            papers,
+            table_state,
+            filter_date,
+            run: true,
+            saving_type: SavingType::DoNotSave,
+            history: vec![],
+        };
+
+        while state.run {
             terminal.draw(|f| {
-                render(&papers, f, &mut state, filter_date);
-                input_handle(&mut papers, &mut run, &mut saving_type, &mut state);
+                render(&mut state, f);
+                input_handle(&mut state);
             })?;
         }
         // restore terminal
@@ -272,11 +287,11 @@ pub(crate) fn get_selected_papers(
         )?;
         terminal.show_cursor()?;
 
-        match saving_type {
+        match state.saving_type {
             SavingType::DoNotSave => Ok(SelectedPapers::Abort),
-            SavingType::Save => Ok(SelectedPapers::Selected(papers)),
+            SavingType::Save => Ok(SelectedPapers::Selected(state.papers)),
             SavingType::SaveNewDate(i) => {
-                let (_, snd) = papers.split_at(i);
+                let (_, snd) = state.papers.split_at(i);
                 Ok(SelectedPapers::SelectedAndSavedAt(snd.into()))
             }
         }
