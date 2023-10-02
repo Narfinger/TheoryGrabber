@@ -222,7 +222,11 @@ fn input_handle(state: &mut GuiState) {
                 KeyCode::PageDown => state.table_state.select(Some(state.papers.len() - 1)),
                 KeyCode::Char('u') => {
                     if let Some(paper) = state.history.pop() {
-                        state.papers.push(paper);
+                        if let Some(i) = state.table_state.selected() {
+                            state.papers.insert(i, paper);
+                        } else {
+                            state.papers.push(paper);
+                        }
                     }
                 }
                 _ => {}
