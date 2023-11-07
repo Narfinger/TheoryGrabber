@@ -41,12 +41,7 @@ fn render_paper(p: &Paper) -> Row {
 }
 
 /// Renders the right side details page
-fn render_details<B: Backend>(
-    state: &TableState,
-    papers: &[Paper],
-    p_abstract_layout: &[Rect],
-    f: &mut Frame<B>,
-) {
+fn render_details(state: &TableState, papers: &[Paper], p_abstract_layout: &[Rect], f: &mut Frame) {
     let selected_paper = state.selected().and_then(|i| papers.get(i));
     if let Some(paper) = selected_paper {
         let details_layout = Layout::default()
@@ -93,7 +88,7 @@ fn render_details<B: Backend>(
 }
 
 /// renders the help box
-fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: DateTime<Utc>) {
+fn render_help(main_layout: &[Rect], f: &mut Frame, filter_date: DateTime<Utc>) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -120,7 +115,7 @@ fn render_help<B: Backend>(main_layout: &[Rect], f: &mut Frame<B>, filter_date: 
 }
 
 /// Main Render
-fn render<B: Backend>(state: &mut GuiState, f: &mut Frame<B>) {
+fn render(state: &mut GuiState, f: &mut Frame) {
     // Create a layout into which to place our blocks.
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
