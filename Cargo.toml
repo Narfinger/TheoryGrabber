@@ -11,7 +11,7 @@ description = "Downloads papers from arxiv and eccc and stores them in a local d
 
 [dependencies]
 anyhow = "1.0.75"
-clap = { version = "4.4.10", features = ["derive"] }
+clap = { version = "4.4.11", features = ["derive"] }
 console = "0.15.7"
 chrono = { version = "0.4.31", features = [
     "serde",
