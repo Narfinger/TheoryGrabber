@@ -5,18 +5,3 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  # commons
-  - package-ecosystem: "cargo"
-    directory: "/viola_common"
-    schedule:
-      interval: "weekly"
-  # npm in webgui
-  - package-ecosystem: "npm"
-    directory: "/web_gui_yew"
-    schedule:
-      interval: "weekly"
-  # cargo in webgui
-  - package-ecosystem: "cargo"
-    directory: "/web_gui_yew"
-    schedule:
-      interval: "weekly"
