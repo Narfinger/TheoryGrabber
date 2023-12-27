@@ -125,21 +125,23 @@ fn render(state: &mut GuiState, f: &mut Frame) {
     render_help(&main_layout, f, state.filter_date);
 
     let items = state.papers.iter().map(render_paper).collect::<Vec<Row>>();
-    let table = Table::new(items)
-        //.style(Style::default().fg(Color::Blue))
-        .block(Block::default().title("Papers").borders(Borders::ALL))
-        .header(
-            Row::new(vec!["Title", "Authors", "Source", "Date"])
-                .style(Style::default().add_modifier(Modifier::UNDERLINED)),
-        )
-        .widths(&[
+    let table = Table::new(
+        items,
+        &[
             Constraint::Length(60),
             Constraint::Length(20),
             Constraint::Length(15),
             Constraint::Length(20),
-        ])
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol(">>");
+        ],
+    )
+    //.style(Style::default().fg(Color::Blue))
+    .block(Block::default().title("Papers").borders(Borders::ALL))
+    .header(
+        Row::new(vec!["Title", "Authors", "Source", "Date"])
+            .style(Style::default().add_modifier(Modifier::UNDERLINED)),
+    )
+    .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+    .highlight_symbol(">>");
 
     let p_abstract_layout = Layout::default()
         .direction(Direction::Horizontal)
