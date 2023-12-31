@@ -127,7 +127,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
     let items = state.papers.iter().map(render_paper).collect::<Vec<Row>>();
     let table = Table::new(
         items,
-        &[
+        [
             Constraint::Length(60),
             Constraint::Length(20),
             Constraint::Length(15),
