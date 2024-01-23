@@ -245,6 +245,7 @@ fn fuzzy_exists_test() {
 
 /// If 'p' is an Arxiv version, test if there exists an ECCC version with the same title.
 /// Remember that this is symmetric
+#[cfg(test)]
 fn fuzzy_exists_equal_different_source(v: &[Paper], p: &Paper) -> bool {
     v.iter()
         .any(|q| (p.source.is_arxiv() && q.source == Source::ECCC && p.title == q.title))

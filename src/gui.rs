@@ -5,7 +5,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
+    backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Text},
@@ -88,7 +88,12 @@ fn render_details(state: &TableState, papers: &[Paper], p_abstract_layout: &[Rec
 }
 
 /// renders the help box
-fn render_help(main_layout: &[Rect], f: &mut Frame, filter_date: DateTime<Utc>) {
+fn render_help(
+    main_layout: &[Rect],
+    f: &mut Frame,
+    filter_date: DateTime<Utc>,
+    last_date: DateTime<Utc>,
+) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -110,6 +115,7 @@ fn render_help(main_layout: &[Rect], f: &mut Frame, filter_date: DateTime<Utc>) 
             (filter_date - chrono::Duration::days(1)).format("%d-%m-%Y")
         )),
         ListItem::new(format!("Today: {}", Utc::now().format("%d-%m-%Y"))),
+        ListItem::new(format!("Last Paper: {}", last_date.format("%d-%m-%Y"))),
     ]);
     f.render_widget(dates, layout[1]);
 }
@@ -122,7 +128,12 @@ fn render(state: &mut GuiState, f: &mut Frame) {
         .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
         .split(f.size());
 
-    render_help(&main_layout, f, state.filter_date);
+    render_help(
+        &main_layout,
+        f,
+        state.filter_date,
+        state.papers.first().unwrap().published,
+    );
 
     let items = state.papers.iter().map(render_paper).collect::<Vec<Row>>();
     let table = Table::new(
