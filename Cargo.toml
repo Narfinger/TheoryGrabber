@@ -13,7 +13,7 @@ description = "Downloads papers from arxiv and eccc and stores them in a local d
 anyhow = "1.0.79"
 clap = { version = "4.4.18", features = ["derive"] }
 console = "0.15.8"
-chrono = { version = "0.4.32", features = [
+chrono = { version = "0.4.33", features = [
     "serde",
 ] } # Date and time library for Rust
 chrono-tz = "0.8.5"
