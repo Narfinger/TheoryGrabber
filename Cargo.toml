@@ -19,7 +19,7 @@ chrono = { version = "0.4.33", features = [
 chrono-tz = "0.8.5"
 log = "0.4.20"
 pretty_env_logger = "0.5.0"
-indicatif = "0.17.7"
+indicatif = "0.17.8"
 rayon = "1.8.1"
 reqwest = { version = "0.11.24", features = [
     'blocking',
