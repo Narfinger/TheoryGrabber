@@ -246,29 +246,12 @@ fn date_parse_test() {
 }
 
 /// This extracts the authors.
-/// We split at whitespace, skip the first 5 which are id and link
-/// we construct enumerates for all authors, to merge adjacent authors together, i.e., ["Foo" "Bar"] -> ["Foo Bar"].
 fn extract_authors(authors_raw: &str) -> Vec<String> {
-    type EnumeratedVec = (Vec<(usize, String)>, Vec<(usize, String)>);
-
-    let enumerated_strings = authors_raw
-        .split_whitespace()
-        .skip(5)
+    authors_raw
+        .split_terminator(",")
+        .filter_map(|author| author.split_whitespace().last())
         .map(String::from)
-        .enumerate();
-    let (even, odd): EnumeratedVec = enumerated_strings.partition(|&(x, _)| x % 2 == 0);
-
-    let mut authors = even
-        .into_iter()
-        .zip(odd)
-        .map(|((_, x), (_, y))| x + " " + &y)
-        .collect::<Vec<String>>();
-
-    // the authors have for some reason a comma after it
-    for i in authors.iter_mut() {
-        i.pop();
-    }
-    authors
+        .collect()
 }
 
 /// This extracts the id and rough date from the `id_date_raw` string.
