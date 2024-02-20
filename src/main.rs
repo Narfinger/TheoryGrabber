@@ -77,9 +77,11 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
     }
     progressbar.finish();
 
-    println!("\nCould not download the following papers:");
-    for i in errored_out {
-        println!("{}", i.link);
+    if !errored_out.is_empty() {
+        println!("\nCould not download the following papers:");
+        for i in errored_out {
+            println!("{}", i.link);
+        }
     }
 
     Ok(files)
