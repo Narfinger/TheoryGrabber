@@ -248,7 +248,7 @@ fn date_parse_test() {
 /// This extracts the authors.
 fn extract_authors(authors_raw: &str) -> Vec<String> {
     authors_raw
-        .split_terminator(",")
+        .split_terminator(',')
         .filter_map(|author| author.split_whitespace().last())
         .map(String::from)
         .collect()
