@@ -27,7 +27,7 @@ reqwest = { version = "0.11.24", features = [
 ] } # higher level HTTP client library
 select = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
-tempfile = "3.10.0"
+tempfile = "3.10.1"
 toml = "0.8.10"
 #oauth2 = "4.1.0"
 quick-xml = "0.31.0"
