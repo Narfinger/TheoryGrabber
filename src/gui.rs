@@ -112,7 +112,7 @@ fn render_help(
     let dates = List::new(vec![
         ListItem::new(format!(
             "Filter Date: {}",
-            (filter_date - chrono::Duration::days(1)).format("%d-%m-%Y")
+            (filter_date - chrono::Duration::try_days(1).unwrap()).format("%d-%m-%Y")
         )),
         ListItem::new(format!("Today: {}", Utc::now().format("%d-%m-%Y"))),
         ListItem::new(format!("Last Paper: {}", last_date.format("%d-%m-%Y"))),
@@ -125,7 +125,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
     // Create a layout into which to place our blocks.
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(10), Constraint::Percentage(90)].as_ref())
+        .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
         .split(f.size());
 
     render_help(

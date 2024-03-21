@@ -186,12 +186,12 @@ fn special_filter(date: chrono::DateTime<chrono::Utc>, p: &Paper) -> bool {
                 .unwrap()
                 .with_timezone(&chrono::Utc);
             if perhaps_date >= date {
-                perhaps_date -= Duration::days(1);
+                perhaps_date -= Duration::try_days(1).unwrap();
             }
             if perhaps_date.weekday() == Weekday::Sat {
-                perhaps_date -= Duration::days(1);
+                perhaps_date -= Duration::try_days(1).unwrap();
             } else if perhaps_date.weekday() == Weekday::Sun {
-                perhaps_date -= Duration::days(2);
+                perhaps_date -= Duration::try_days(2).unwrap();
             }
 
             p.published > perhaps_date
