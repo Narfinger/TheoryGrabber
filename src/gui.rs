@@ -216,9 +216,9 @@ fn input_handle(state: &mut GuiState) {
                             let removed_paper = state.papers.remove(i);
                             state.history.push(removed_paper);
 
-                            let selected = state.table_state.selected().unwrap_or(0);
-                            let new_selected = selected.saturating_sub(1);
-                            state.table_state.select(Some(new_selected));
+                            if let Some(selected) = state.table_state.selected() {
+                                state.table_state.select(Some(selected - 1));
+                            }
                         } else {
                             state.table_state.select(None);
                         }
