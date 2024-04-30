@@ -93,6 +93,7 @@ fn render_help(
     f: &mut Frame,
     filter_date: DateTime<Utc>,
     last_date: DateTime<Utc>,
+    paper_number: usize,
 ) {
     let layout = Layout::default()
         .direction(Direction::Horizontal)
@@ -116,6 +117,7 @@ fn render_help(
         )),
         ListItem::new(format!("Today: {}", Utc::now().format("%d-%m-%Y"))),
         ListItem::new(format!("Last Paper: {}", last_date.format("%d-%m-%Y"))),
+        ListItem::new(format!("Number of papers: {}", paper_number)),
     ]);
     f.render_widget(dates, layout[1]);
 }
@@ -133,6 +135,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
         f,
         state.filter_date,
         state.papers.first().unwrap().published,
+        state.papers.len(),
     );
 
     let items = state.papers.iter().map(render_paper).collect::<Vec<Row>>();
