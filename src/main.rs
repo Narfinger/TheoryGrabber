@@ -15,9 +15,10 @@ use config::Config;
 use gui::SelectedPapers;
 use indicatif::{ProgressBar, ProgressStyle};
 use log::info;
+use reqwest::blocking::Client;
 use std::fs::File;
 use std::io::copy;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::thread;
 use tempfile::TempDir;
 use types::Source;
@@ -25,13 +26,34 @@ use types::Source;
 const OK_EMOJI: char = '\u{2705}';
 const NOT_OK_EMOJI: char = '\u{274C}';
 
+/// Downloads a single paper and returns the path it was aved to
+fn download_paper<'a>(client: &'a Client, dir: &TempDir, paper: &'a Paper) -> Result<PathBuf> {
+    let mut response = client.get(paper.link.clone()).send()?;
+    let contenttype = response.headers().get(reqwest::header::CONTENT_TYPE);
+    if contenttype
+        != Some(
+            &reqwest::header::HeaderValue::from_str("application/pdf")
+                .expect("Error in parsing header"),
+        )
+    {
+        Err(anyhow!("Response invalid"))?
+    } else {
+        let filename = Path::new("")
+            .with_file_name(&paper.title)
+            .with_extension("pdf");
+        let savefile = dir.path().join(&filename);
+        let mut file = File::create(savefile.clone()).context(anyhow!(
+            "Error in file with filename: {:?}, savefile: {:?}",
+            filename.clone(),
+            savefile.clone()
+        ))?;
+        info!("Downloading {} onto {:?}", &paper.title, &savefile);
+        copy(&mut response, &mut file).context("Downloading paper")?;
+        Ok(savefile)
+    }
+}
 /// Downloads the papers to the `TempDir`.
 fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
-    //println!("We will download the following papers:");
-    //for i in papers {
-    //    println!("{}", i.title);
-    //}
-
     let mut files: Vec<DownloadedPaper> = Vec::new();
     let mut errored_out: Vec<Paper> = Vec::new();
     let progressbar = ProgressBar::new(papers.len() as u64);
@@ -49,30 +71,13 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
         .user_agent("TheoryGrabber")
         .build()?;
     for i in progressbar.wrap_iter(papers.iter()) {
-        let mut response = client.get(i.link.clone()).send()?;
-        let contenttype = response.headers().get(reqwest::header::CONTENT_TYPE);
-        if contenttype
-            != Some(
-                &reqwest::header::HeaderValue::from_str("application/pdf")
-                    .expect("Error in parsing header"),
-            )
-        {
-            errored_out.push(i.clone());
-        } else {
-            let filename = Path::new("").with_file_name(&i.title).with_extension("pdf");
-            let savefile = dir.path().join(&filename);
-            let mut file = File::create(savefile.clone()).context(anyhow!(
-                "Error in file with filename: {:?}, savefile: {:?}",
-                filename.clone(),
-                savefile.clone()
-            ))?;
-            info!("Downloading {} onto {:?}", &i.title, &savefile);
-            copy(&mut response, &mut file)?;
-
+        if let Ok(path) = download_paper(&client, dir, i) {
             files.push(DownloadedPaper {
                 paper: i,
-                path: savefile,
+                path: path,
             });
+        } else {
+            errored_out.push(i.clone());
         }
     }
     progressbar.finish();
