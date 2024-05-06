@@ -22,6 +22,7 @@ struct GuiState {
     papers: Vec<Paper>,
     table_state: TableState,
     filter_date: DateTime<Utc>,
+    last_date: DateTime<Utc>,
     run: bool,
     saving_type: SavingType,
     history: Vec<Paper>,
@@ -134,7 +135,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
         &main_layout,
         f,
         state.filter_date,
-        state.papers.first().unwrap().published,
+        state.last_date,
         state.papers.len(),
     );
 
@@ -220,7 +221,7 @@ fn input_handle(state: &mut GuiState) {
                             state.history.push(removed_paper);
 
                             if let Some(selected) = state.table_state.selected() {
-                                state.table_state.select(Some(selected - 1));
+                                state.table_state.select(selected.checked_sub(1));
                             }
                         } else {
                             state.table_state.select(None);
@@ -277,11 +278,13 @@ pub(crate) fn get_selected_papers(
         papers.sort_unstable_by(|a, b| b.cmp(a));
         let mut table_state = TableState::default();
         table_state.select(Some(papers.len() - 1));
+        let last_date = papers.first().unwrap().published;
 
         let mut state = GuiState {
             papers,
             table_state,
             filter_date,
+            last_date,
             run: true,
             saving_type: SavingType::DoNotSave,
             history: vec![],
