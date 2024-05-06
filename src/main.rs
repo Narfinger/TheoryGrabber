@@ -74,7 +74,7 @@ fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<Downloa
         if let Ok(path) = download_paper(&client, dir, i) {
             files.push(DownloadedPaper {
                 paper: i,
-                path: path,
+                path,
             });
         } else {
             errored_out.push(i.clone());
