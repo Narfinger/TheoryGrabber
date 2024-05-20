@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use config::Config;
 use gui::SelectedPapers;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use log::info;
 use reqwest::blocking::Client;
 use std::fs::File;
@@ -23,8 +23,9 @@ use std::thread;
 use tempfile::TempDir;
 use types::Source;
 
-const OK_EMOJI: char = '\u{2705}';
-const NOT_OK_EMOJI: char = '\u{274C}';
+const OK_EMOJI: char = '✅';
+const NOT_OK_EMOJI: char = '❌';
+const THUMPSUP_EMOJI: char = '👍';
 
 /// Downloads a single paper and returns the path it was aved to
 fn download_paper<'a>(client: &'a Client, dir: &TempDir, paper: &'a Paper) -> Result<PathBuf> {
@@ -53,53 +54,64 @@ fn download_paper<'a>(client: &'a Client, dir: &TempDir, paper: &'a Paper) -> Re
     }
 }
 /// Downloads the papers to the `TempDir`.
-fn download_papers<'a>(papers: &'a [Paper], dir: &TempDir) -> Result<Vec<DownloadedPaper<'a>>> {
-    let mut files: Vec<DownloadedPaper> = Vec::new();
-    let mut errored_out: Vec<Paper> = Vec::new();
-    let progressbar = ProgressBar::new(papers.len() as u64);
-    progressbar.set_message("Downloading Papers");
-    progressbar.set_style(
+fn download_papers<'a>(
+    papers: &'a [Paper],
+    dir: &TempDir,
+    args: &Args,
+) -> Result<Vec<DownloadedPaper<'a>>> {
+    if !papers.is_empty() {
+        let mut files: Vec<DownloadedPaper> = Vec::new();
+        let mut errored_out: Vec<Paper> = Vec::new();
+        let progressbar = ProgressBar::new(papers.len() as u64);
+        progressbar.set_message("Downloading Papers");
+        progressbar.set_style(
         ProgressStyle::default_bar()
-            .template(
-                "[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}",
-            )?
-            .progress_chars("#>-"),
+        .template(
+            "[{elapsed_precise}] {msg} {spinner:.green} {bar:100.green/blue} {pos:>7}/{len:7}",
+        )?
+        .progress_chars("#>-"),
     );
-    progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
-
-    let client = reqwest::blocking::Client::builder()
-        .user_agent("TheoryGrabber")
-        .build()?;
-    for i in progressbar.wrap_iter(papers.iter()) {
-        if let Ok(path) = download_paper(&client, dir, i) {
-            files.push(DownloadedPaper {
-                paper: i,
-                path,
-            });
-        } else {
-            errored_out.push(i.clone());
+        progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
+        if args.quiet {
+            progressbar.set_draw_target(ProgressDrawTarget::hidden())
         }
-    }
-    progressbar.finish();
 
-    if !errored_out.is_empty() {
-        println!("\nCould not download the following papers:");
-        for i in errored_out {
-            println!("{}", i.link);
+        let client = reqwest::blocking::Client::builder()
+            .user_agent("TheoryGrabber")
+            .build()?;
+        for i in progressbar.wrap_iter(papers.iter()) {
+            if let Ok(path) = download_paper(&client, dir, i) {
+                files.push(DownloadedPaper { paper: i, path });
+            } else {
+                errored_out.push(i.clone());
+            }
         }
-    }
+        progressbar.finish();
 
-    Ok(files)
+        if !errored_out.is_empty() {
+            println!("\nCould not download the following papers:");
+            for i in errored_out {
+                println!("{}", i.link);
+            }
+        }
+
+        Ok(files)
+    } else {
+        Ok(vec![])
+    }
 }
 
 /// Fetches the papers and filters for new papers.
-fn get_and_filter_papers(config: &config::Config) -> Result<Vec<Paper>> {
+fn get_and_filter_papers(config: &config::Config, args: &Args) -> Result<Vec<Paper>> {
     let progress_fetch_bar = ProgressBar::new_spinner();
     progress_fetch_bar.set_message("Getting Arxiv/ECCC");
     progress_fetch_bar.set_style(
         ProgressStyle::default_bar().template("[{elapsed_precise}] {msg} {spinner:.green}")?,
     );
     progress_fetch_bar.enable_steady_tick(std::time::Duration::new(0, 100));
+    if args.quiet {
+        progress_fetch_bar.set_draw_target(ProgressDrawTarget::hidden())
+    }
 
     let time = config.last_checked_arxiv.unwrap_or_else(chrono::Utc::now);
     let handle = thread::spawn(move || {
@@ -146,9 +158,9 @@ fn setup() -> Result<String> {
 }
 
 /// downloads and puts an array of papers into their folders
-fn handle_papers(papers: &[Paper], config: &Config) -> Result<()> {
+fn handle_papers(papers: &[Paper], config: &Config, args: &Args) -> Result<()> {
     let dir = TempDir::new()?;
-    let files = download_papers(papers, &dir).context("Files error")?;
+    let files = download_papers(papers, &dir, args).context("Files error")?;
 
     let progressbar = ProgressBar::new(files.len() as u64);
     progressbar.set_message("Uploading Papers");
@@ -160,6 +172,9 @@ fn handle_papers(papers: &[Paper], config: &Config) -> Result<()> {
             .progress_chars("#>-"),
     );
     progressbar.enable_steady_tick(std::time::Duration::new(0, 100));
+    if args.quiet {
+        progressbar.set_draw_target(ProgressDrawTarget::hidden())
+    }
 
     for i in progressbar.wrap_iter(files.iter()) {
         let f = File::open(i.path.clone()).context("File couldn't be opened")?;
@@ -193,9 +208,9 @@ fn get_latest_dates(papers: &[Paper]) -> NewDate {
     }
 }
 
-fn run() -> Result<()> {
+fn run(args: &Args) -> Result<()> {
     let mut config = config::Config::read_or_default();
-    let mut filtered_papers = get_and_filter_papers(&config)?;
+    let mut filtered_papers = get_and_filter_papers(&config, args)?;
 
     filtered_papers.sort_unstable_by(|a, b| b.cmp(a));
     // we need to get the first one as it is in descending order
@@ -225,12 +240,18 @@ fn run() -> Result<()> {
             config.write()
         }
         SelectedPapers::Selected(papers) => {
-            handle_papers(&papers, &config)?;
-            config.write()
+            handle_papers(&papers, &config, args)?;
+            let c = config.write();
+            println!(
+                "We downloaded {} papers {}",
+                papers.len(),
+                console::Emoji(&THUMPSUP_EMOJI.to_string(), "")
+            );
+            c
         }
 
         SelectedPapers::SelectedAndSavedAt(papers) => {
-            handle_papers(&papers, &config)?;
+            handle_papers(&papers, &config, args)?;
             // now we need to modify the date
             let new = get_latest_dates(&papers);
             if config.last_checked_arxiv.unwrap() <= new.arxiv.unwrap_or_default() {
@@ -255,6 +276,10 @@ struct Args {
     /// Sets the download to local with this as a directory
     #[clap(short, long)]
     local: Option<String>,
+
+    /// hide progress bar
+    #[clap(short, long)]
+    quiet: bool,
 }
 
 fn main() {
@@ -280,7 +305,7 @@ fn main() {
     } else if config::Config::read().is_err() {
         println!("Please initialize config with the oauth or local option.");
         return;
+    } else {
+        run(&args).expect("Error");
     }
-
-    run().expect("Error");
 }
