@@ -155,7 +155,11 @@ fn parse_url(query: &[(&str, &str)], arxiv_cat: String) -> Result<Vec<Paper>> {
                     .with_timezone(&chrono::Utc),
                 link: reqwest::Url::parse(&p.link.unwrap()).unwrap(),
                 source: Source::Arxiv(arxiv_cat.clone()),
-                authors: p.authors,
+                authors: p
+                    .authors
+                    .into_iter()
+                    .filter(|a| !a.trim().is_empty())
+                    .collect(),
             }
         })
         .collect::<Vec<Paper>>())
