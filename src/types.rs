@@ -369,3 +369,8 @@ pub(crate) fn sanitize_title(title: &str) -> String {
         .replace("  ", " ")
         .replace(std::path::MAIN_SEPARATOR, "")
 }
+
+pub(crate) struct NewDate {
+    pub(crate) eccc: Option<chrono::DateTime<chrono::Utc>>,
+    pub(crate) arxiv: Option<chrono::DateTime<chrono::Utc>>,
+}

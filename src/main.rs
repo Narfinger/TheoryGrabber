@@ -21,7 +21,7 @@ use std::io::copy;
 use std::path::{Path, PathBuf};
 use std::thread;
 use tempfile::TempDir;
-use types::Source;
+use types::{NewDate, Source};
 
 const OK_EMOJI: char = '✅';
 const NOT_OK_EMOJI: char = '❌';
@@ -185,11 +185,6 @@ fn handle_papers(papers: &[Paper], config: &Config, args: &Args) -> Result<()> {
     Ok(())
 }
 
-struct NewDate {
-    eccc: Option<chrono::DateTime<chrono::Utc>>,
-    arxiv: Option<chrono::DateTime<chrono::Utc>>,
-}
-
 fn get_latest_dates(papers: &[Paper]) -> NewDate {
     let new_arxiv_date = papers
         .iter()
@@ -250,16 +245,21 @@ fn run(args: &Args) -> Result<()> {
             c
         }
 
-        SelectedPapers::SelectedAndSavedAt(papers) => {
+        SelectedPapers::SelectedAndSavedAt(papers, new) => {
             handle_papers(&papers, &config, args)?;
             // now we need to modify the date
-            let new = get_latest_dates(&papers);
             if config.last_checked_arxiv.unwrap() <= new.arxiv.unwrap_or_default() {
                 config.last_checked_arxiv = new.arxiv;
             }
             if config.last_checked_eccc.unwrap() <= new.eccc.unwrap_or_default() {
                 config.last_checked_eccc = new.eccc;
             }
+            println!(
+                "Downloading {} and saving at {} and {}",
+                papers.len(),
+                config.last_checked_arxiv.unwrap_or_default(),
+                config.last_checked_eccc.unwrap_or_default()
+            );
             config.write()
         }
     }

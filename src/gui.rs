@@ -13,7 +13,10 @@ use ratatui::{
     Frame, Terminal,
 };
 
-use crate::types::Paper;
+use crate::{
+    types::{Paper, Source},
+    NewDate,
+};
 use ratatui::widgets::{Block, Borders};
 use std::io;
 use std::time::Duration;
@@ -174,7 +177,7 @@ enum SavingType {
     /// Save all remaining papers
     Save,
     /// Save all remaining papers up to index
-    SaveNewDate(usize),
+    SaveNewDate(usize, NewDate),
 }
 
 /// Handles the input
@@ -193,7 +196,23 @@ fn input_handle(state: &mut GuiState) {
                 KeyCode::Char('x') => {
                     state.run = false;
                     if let Some(i) = state.table_state.selected() {
-                        state.saving_type = SavingType::SaveNewDate(i);
+                        let eccc_last_date = state
+                            .history
+                            .iter()
+                            .filter(|a| a.source == Source::ECCC)
+                            .map(|a| a.published)
+                            .max();
+                        let arxiv_last_date = state
+                            .history
+                            .iter()
+                            .filter(|a| a.source.is_arxiv())
+                            .map(|a| a.published)
+                            .max();
+                        let nd = NewDate {
+                            eccc: eccc_last_date,
+                            arxiv: arxiv_last_date,
+                        };
+                        state.saving_type = SavingType::SaveNewDate(i, nd);
                     } else {
                         state.saving_type = SavingType::DoNotSave;
                     }
@@ -254,7 +273,7 @@ pub(crate) enum SelectedPapers {
     /// We have some selected papers
     Selected(Vec<Paper>),
     /// We stopped looking at papers somewhere in the middle and want to save the last date
-    SelectedAndSavedAt(Vec<Paper>),
+    SelectedAndSavedAt(Vec<Paper>, NewDate),
     /// Do not save anything
     Abort,
 }
@@ -308,9 +327,9 @@ pub(crate) fn get_selected_papers(
         match state.saving_type {
             SavingType::DoNotSave => Ok(SelectedPapers::Abort),
             SavingType::Save => Ok(SelectedPapers::Selected(state.papers)),
-            SavingType::SaveNewDate(i) => {
+            SavingType::SaveNewDate(i, date) => {
                 let (_, snd) = state.papers.split_at(i);
-                Ok(SelectedPapers::SelectedAndSavedAt(snd.into()))
+                Ok(SelectedPapers::SelectedAndSavedAt(snd.into(), date))
             }
         }
     }
