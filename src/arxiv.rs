@@ -42,7 +42,6 @@ fn parse_url(query: &[(&str, &str)], arxiv_cat: String) -> Result<Vec<Paper>> {
     reqreader.read_to_string(&mut resp)?;
 
     let mut reader = Reader::from_str(&resp);
-    reader.trim_text(true);
     let mut buf = Vec::new();
     let mut tag = Tag::Nothing;
     let mut entries: Vec<TmpPaper> = Vec::new();
