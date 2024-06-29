@@ -218,19 +218,18 @@ fn input_handle(state: &mut GuiState) {
                     }
                 }
                 KeyCode::Down => {
-                    let selected = state.table_state.selected().unwrap_or(0);
-                    let new_selected = if selected + 1 >= state.papers.len() {
-                        selected
-                    } else {
-                        selected + 1
-                    };
-
-                    state.table_state.select(Some(new_selected));
+                    let next = state
+                        .table_state
+                        .selected()
+                        .map_or(0, |i| i.saturating_add(1));
+                    state.table_state.select(Some(next));
                 }
                 KeyCode::Up | KeyCode::Char('w') => {
-                    let selected = state.table_state.selected().unwrap_or(0);
-                    let new_selected = selected.saturating_sub(1);
-                    state.table_state.select(Some(new_selected));
+                    let previous = state
+                        .table_state
+                        .selected()
+                        .map_or(usize::MAX, |i| i.saturating_sub(1));
+                    state.table_state.select(Some(previous));
                 }
                 KeyCode::Delete | KeyCode::Char('d') => {
                     if let Some(i) = state.table_state.selected() {
