@@ -28,7 +28,7 @@ reqwest = { version = "0.12.5", features = [
 select = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
 tempfile = "3.10.1"
-toml = "0.8.15"
+toml = "0.8.16"
 #oauth2 = "4.1.0"
 quick-xml = "0.36.0"
 nom = "7.1.3"
