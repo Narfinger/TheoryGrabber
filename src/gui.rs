@@ -132,7 +132,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(15), Constraint::Percentage(85)].as_ref())
-        .split(f.size());
+        .split(f.area());
 
     render_help(
         &main_layout,
