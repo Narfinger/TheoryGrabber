@@ -158,7 +158,7 @@ fn render(state: &mut GuiState, f: &mut Frame) {
         Row::new(vec!["Title", "Authors", "Source", "Date"])
             .style(Style::default().add_modifier(Modifier::UNDERLINED)),
     )
-    .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+    .row_highlight_style(Style::default().add_modifier(Modifier::BOLD))
     .highlight_symbol(">>");
 
     let p_abstract_layout = Layout::default()
@@ -218,18 +218,10 @@ fn input_handle(state: &mut GuiState) {
                     }
                 }
                 KeyCode::Down => {
-                    let next = state
-                        .table_state
-                        .selected()
-                        .map_or(0, |i| i.saturating_add(1));
-                    state.table_state.select(Some(next));
+                    state.table_state.scroll_down_by(1);
                 }
                 KeyCode::Up | KeyCode::Char('w') => {
-                    let previous = state
-                        .table_state
-                        .selected()
-                        .map_or(usize::MAX, |i| i.saturating_sub(1));
-                    state.table_state.select(Some(previous));
+                    state.table_state.scroll_up_by(1);
                 }
                 KeyCode::Delete | KeyCode::Char('d') => {
                     if let Some(i) = state.table_state.selected() {
