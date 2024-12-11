@@ -1,7 +1,7 @@
 [package]
 name = "theory_grabber"
 license = "GPL-3.0-only"
-version = "2.18.3"
+version = "2.18.4"
 authors = ["Narfinger <Narfinger@users.noreply.github.com>"]
 edition = "2021"
 categories = ["command-line-utilities"]
@@ -13,7 +13,7 @@ description = "Downloads papers from arxiv and eccc and stores them in a local d
 anyhow = "1.0.94"
 clap = { version = "4.5.23", features = ["derive"] }
 console = "0.15.8"
-chrono = { version = "0.4.38", features = [
+chrono = { version = "0.4.39", features = [
     "serde",
 ] } # Date and time library for Rust
 chrono-tz = "0.10"
