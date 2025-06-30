@@ -30,7 +30,7 @@ serde = { version = "1.0", features = ["derive"] }
 tempfile = "3.20.0"
 toml = "0.8.22"
 #oauth2 = "4.1.0"
-quick-xml = "0.37.5"
+quick-xml = "0.38.0"
 nom = "8.0.0"
 url = "2.5.4"
 directories = "6.0.0"
